@@ -1,0 +1,75 @@
+#include <Arduino.h>
+#include <Adafruit_NeoPixel.h>
+
+#define LED_PIN 5
+#define NUM_LEDS 3
+
+Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
+
+uint32_t RED = strip.Color(255, 0, 0);
+uint32_t GREEN = strip.Color(0, 255, 0);
+uint32_t BLUE = strip.Color(0, 0, 255);
+uint32_t OFF = strip.Color(0, 0, 0);
+
+void setup() {
+  // Initialize serial communication
+  Serial.begin(115200);
+  Serial.println("ESP32-S3 Miniatures Vitrine - Phase 1");
+  
+  // Initialize NeoPixel strip
+  strip.begin();
+  strip.clear();
+  strip.show();
+  
+  // Set initial brightness (0-255)
+  strip.setBrightness(25);
+}
+
+// Function to light up a specific position
+void lightPosition(int position, uint32_t color) {
+  strip.clear();
+  if (position >= 0 && position < NUM_LEDS) {
+    strip.setPixelColor(position, color);
+  }
+  strip.show();
+}
+
+void loop() {
+  // Phase 1: Cycle through each position with different colors
+  
+  // Light up position 0 with RED
+  Serial.println("Position 0: RED");
+  lightPosition(0, RED);
+  delay(2000);
+  
+  // Light up position 1 with GREEN
+  Serial.println("Position 1: GREEN");
+  lightPosition(1, GREEN);
+  delay(2000);
+  
+  // Light up position 2 with BLUE
+  Serial.println("Position 2: BLUE");
+  lightPosition(2, BLUE);
+  delay(2000);
+  
+  // Turn off all LEDs briefly
+  Serial.println("All LEDs OFF");
+  strip.clear();
+  strip.show();
+  delay(1000);
+  
+  // Simple animation: cycle through all positions quickly
+  Serial.println("Running animation sequence");
+  for (int i = 0; i < 3; i++) {
+    // Cycle through positions 3 times
+    for (int pos = 0; pos < NUM_LEDS; pos++) {
+      lightPosition(pos, strip.Color(255, 255, 255));
+      delay(500);
+    }
+  }
+  
+  // Turn off all LEDs before starting again
+  strip.clear();
+  strip.show();
+  delay(1000);
+}
