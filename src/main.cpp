@@ -1,18 +1,18 @@
 #include <Arduino.h>
 #include "config.h"
 #include "led_control.h"
-#include "display_control.h"
+#include "tft_display_control.h" // Cambiado a TFT display
 #include "encoder_control.h"
 
 // Pin connections for ESP32-S3:
-// - LED Strip: GPIO48
-// - OLED Display: SDA=GPIO8, SCL=GPIO9
-// - Rotary Encoder: A=GPIO15, B=GPIO16, Button=GPIO14
-// - Mode Button: GPIO17
+// - LED Strip: GPIO47
+// - TFT Display: CS=GPIO10, DC=GPIO14, RST=GPIO18, SCK=GPIO12 (HW SPI), MOSI=GPIO11 (HW SPI), BLK=GPIO19
+// - Rotary Encoder: A=GPIO15, B=GPIO16, Button=GPIO17
+// - Mode Button: GPIO9
 
 // Create instances of our control classes
 LedControl ledControl;
-DisplayControl displayControl;
+TFTDisplayControl displayControl; // Cambiado a TFTDisplayControl
 EncoderControl encoderControl;
 
 // Current miniature index
@@ -22,17 +22,18 @@ void setup() {
   // Initialize serial communication
   Serial.begin(115200);
   Serial.println("ESP32-S3 Miniatures Vitrine - Phase 1 & 2");
-  Serial.println("Configuration: LED=GPIO48, OLED=I2C(SDA:8,SCL:9), Encoder=(15,16,14)");
+  Serial.println("Configuration: LED=GPIO47, Encoder=(15,16,17)");
+  Serial.println("TFT Display: CS=10, DC=14, RST=18, SCK=12, MOSI=11, BLK=19 (Hardware SPI)");
   
   // Initialize LED strip
   ledControl.begin();
   Serial.println("LED strip initialized");
   
-  // Initialize OLED display
+  // Initialize TFT display
   if (!displayControl.begin()) {
-    Serial.println("Failed to initialize display!");
+    Serial.println("Failed to initialize TFT display!");
   } else {
-    Serial.println("OLED display initialized");
+    Serial.println("TFT display initialized");
   }
   
   // Initialize encoder
@@ -50,10 +51,16 @@ void loop() {
     // Update current index from encoder
     currentIndex = encoderControl.getCurrentIndex();
     
-    // Update display with new miniature info
+    // Primero apagar todos los LEDs para evitar interferencias
+    ledControl.clearAll();
+    
+    // Actualizar la pantalla sin LEDs encendidos
     displayControl.showMiniatureInfo(currentIndex);
     
-    // Highlight the corresponding LED position
+    // Pequeña pausa para separar operaciones
+    delay(5);
+    
+    // Ahora encender el LED correspondiente
     ledControl.lightPosition(currentIndex, ledControl.getYellow());
     
     Serial.print("Selected position: ");

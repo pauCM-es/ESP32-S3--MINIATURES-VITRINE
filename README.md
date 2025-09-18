@@ -1,6 +1,14 @@
 # Miniature Display Cabinet Project
 
-This project implements a **smart display cabinet** for miniatures using an **ESP32-S3**. Each shelf contains individually addressable LEDs (WS2812B), an OLED screen for displaying information, and user inputs (rotary encoder, buttons). Future extensions include NFC reading, microSD storage, and wireless control.
+This project implements a **smart display cabinet** for miniatur### Current Wiring
+
+* **LED Strip** → GPIO 47 (changed from GPIO 48 to avoid onboard LED interference)
+* **Display Options:**
+  * **OLED I2C** → SDA: GPIO 8, SCL: GPIO 9
+  * **TFT SPI** → CS: GPIO 10, DC: GPIO 14, RST: GPIO 18, SCK: GPIO 12 (HW), MOSI: GPIO 11 (HW), BLK: GPIO 19
+* **Rotary Encoder** → CLK: GPIO 15, DT: GPIO 16, SW: GPIO 17 (cambiado de GPIO 14)
+* **Extra Button** → GPIO 9 (cambiado de GPIO 17)
+* **microSD (SPI)** → (Planned for later phase)g an **ESP32-S3**. Each shelf contains individually addressable LEDs (WS2812B), an OLED screen for displaying information, and user inputs (rotary encoder, buttons). Future extensions include NFC reading, microSD storage, and wireless control.
 
 ---
 
@@ -8,7 +16,9 @@ This project implements a **smart display cabinet** for miniatures using an **ES
 
 * **ESP32-S3** (main controller)
 * **WS2812B LED strip** (matrix 10 × 7 → 70 LEDs)
-* **OLED Display 0.96'' (128x64, SSD1315, I2C)**
+* **Display options:**
+  * **OLED Display 0.96'' (128x64, SSD1315, I2C)** - Original option
+  * **TFT Display 1.9" IPS (320x170, ST7789, SPI)** - Alternative option with color and higher resolution
 * **Rotary Encoder with push button**
 * **Extra push button** (mode switch)
 * **NFC Module v3 (likely PN532)** → planned for later phase
@@ -85,7 +95,9 @@ The project is organized into multiple files for better maintainability:
 
 ## 📚 Used Libraries (Arduino framework)
 
-* **OLED (SSD1306/SSD1315)** → `Adafruit_SSD1306`, `Adafruit_GFX`
+* **Display Options:**
+  * **OLED (SSD1306/SSD1315)** → `Adafruit_SSD1306`, `Adafruit_GFX`
+  * **TFT (ST7789)** → `Adafruit_ST7789`, `Adafruit_GFX`
 * **Rotary Encoder** → `ESP32Encoder`
 * **WS2812B LEDs** → `Adafruit_NeoPixel`
 * **NFC (PN532)** → `Adafruit_PN532` (planned for Phase 2)
@@ -109,11 +121,12 @@ The project is organized into multiple files for better maintainability:
 
 ### Pin Selection Criteria
 
-* **GPIO 48** for LED strip: Selected for its output capability and to avoid interference with other functions.
+* **GPIO 47** for LED strip: Selected to avoid interference with the onboard RGB LED on GPIO 48.
 * **GPIO 8 & 9** for OLED I2C: These pins support I2C functionality, making them suitable for the display.
+* **GPIO 11 & 12** for TFT SPI: Using hardware SPI pins for maximum performance.
 * **GPIO 15 & 16** for rotary encoder: These pins support interrupts which help with accurate encoder reading.
-* **GPIO 14** for encoder button: Provides clean digital input with internal pull-up resistor.
-* **GPIO 17** for mode button: Offers stable digital input for user interaction.
+* **GPIO 17** for encoder button: Provides clean digital input with internal pull-up resistor.
+* **GPIO 9** for mode button: Offers stable digital input for user interaction.
 
 ### GPIO Pin Types Glossary
 

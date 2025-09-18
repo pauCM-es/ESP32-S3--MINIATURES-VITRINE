@@ -8,7 +8,7 @@
 class LedControl {
 private:
     Adafruit_NeoPixel* strip;
-    
+
 public:
     // Constructor
     LedControl();
@@ -19,16 +19,19 @@ public:
     // Set brightness (0-255)
     void setBrightness(uint8_t brightness);
     
-    // Clear all LEDs
+    // Clear all LEDs (using strip->clear())
     void clear();
     
-    // Light up a specific position
+    // Light a specific position with a color
     void lightPosition(int position, uint32_t color);
+    
+    // Clear all LEDs (turn them off by setting to 0)
+    void clearAll();
     
     // Run a simple animation sequence
     void runAnimation(int cycles);
     
-    // Predefined colors
+    // Color creation and getters
     uint32_t getColor(uint8_t r, uint8_t g, uint8_t b);
     uint32_t getRed();
     uint32_t getGreen();

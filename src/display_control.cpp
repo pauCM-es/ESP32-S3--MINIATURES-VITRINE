@@ -24,8 +24,6 @@ bool DisplayControl::begin() {
     display->setCursor(0, 0);
     display->println(F("Miniatures Vitrine"));
     display->setCursor(0, 16);
-    display->println(F("ESP32-S3 Project"));
-    display->setCursor(0, 40);
     display->println(F("Initializing..."));
     display->display();
     delay(2000);
@@ -58,20 +56,20 @@ void DisplayControl::showMiniatureInfo(int index) {
     display->setCursor(0, 16);
     display->println(DEMO_MINIATURES[index].name);
     
-    // Show author
-    display->setTextSize(1);
-    display->setCursor(0, 36);
-    display->print(F("By: "));
-    display->println(DEMO_MINIATURES[index].author);
+    // // Show author
+    // display->setTextSize(1);
+    // display->setCursor(0, 36);
+    // display->print(F("By: "));
+    // display->println(DEMO_MINIATURES[index].author);
     
-    // Show date
-    display->setCursor(0, 48);
-    display->print(F("Date: "));
-    display->println(DEMO_MINIATURES[index].date);
+    // // Show date
+    // display->setCursor(0, 48);
+    // display->print(F("Date: "));
+    // display->println(DEMO_MINIATURES[index].date);
     
-    // Show navigation hint
-    display->setCursor(0, 56);
-    display->println(F("Turn encoder to navigate"));
+    // // Show navigation hint
+    // display->setCursor(0, 56);
+    // display->println(F("Turn encoder to navigate"));
     
     display->display();
 }
