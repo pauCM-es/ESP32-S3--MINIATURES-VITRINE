@@ -6,8 +6,8 @@ This project implements a **smart display cabinet** for miniatur### Current Wiri
 * **Display Options:**
   * **OLED I2C** → SDA: GPIO 8, SCL: GPIO 9
   * **TFT SPI** → CS: GPIO 10, DC: GPIO 14, RST: GPIO 18, SCK: GPIO 12 (HW), MOSI: GPIO 11 (HW), BLK: GPIO 19
-* **Rotary Encoder** → CLK: GPIO 15, DT: GPIO 16, SW: GPIO 17 (cambiado de GPIO 14)
-* **Extra Button** → GPIO 9 (cambiado de GPIO 17)
+* **Rotary Encoder** → CLK: GPIO 15, DT: GPIO 16, SW: GPIO 17 (changed from GPIO 14)
+* **Extra Button** → GPIO 9 (changed from GPIO 17)
 * **microSD (SPI)** → (Planned for later phase)g an **ESP32-S3**. Each shelf contains individually addressable LEDs (WS2812B), an OLED screen for displaying information, and user inputs (rotary encoder, buttons). Future extensions include NFC reading, microSD storage, and wireless control.
 
 ---
@@ -111,6 +111,31 @@ The project is organized into multiple files for better maintainability:
 
 *Note: Save the image shown above to the `images` folder as `esp32s3_pin_definitions.jpg`*
 
+### Updated Display Configuration
+
+The project now uses a **TFT ST7789 1.9-inch IPS Display** as the primary display. This display was thoroughly tested using the `tft_display_test.cpp` script to ensure proper functionality before integrating it into the main project. The display is connected using the following pins:
+
+* **CS (Chip Select)**: GPIO10
+* **DC (Data/Command)**: GPIO14
+* **RST (Reset)**: GPIO18
+* **SCK (Clock)**: GPIO12 (Hardware SPI)
+* **MOSI (Data)**: GPIO11 (Hardware SPI)
+* **BLK (Backlight)**: GPIO19
+
+### Testing and Integration
+
+The `tft_display_test.cpp` script was used to verify the display's functionality. This script initializes the display, sets the rotation, and displays basic text and graphics to confirm that the hardware and software configurations are correct. Once the display was confirmed to be working, it was integrated into the main project.
+
+### Final Display Choice
+
+The **TFT ST7789** was chosen for its:
+
+* High resolution (320x170 pixels)
+* Full-color support
+* Hardware SPI compatibility for improved performance
+
+This display will be the final choice for the project, replacing the previously used OLED display. All future updates and features will be designed to work with this display.
+
 ### Current Wiring
 
 * **OLED I2C** → SDA: GPIO 8, SCL: GPIO 9
@@ -198,13 +223,26 @@ Many pins on the ESP32-S3 have multiple functions which can be selected in softw
 * ✅ Simple animation sequence added
 * ✅ Serial monitoring for debugging
 
-### Phase 1-2 - OLED Display and Encoder Integration
+### Phase 1-2 - Display and Encoder Integration
 
 * ✅ Project refactored into multiple files for better maintainability
-* ✅ Added OLED display integration (SSD1306/SSD1315)
+* ✅ Added display integration OLED/TFT
 * ✅ Added rotary encoder support with button functionality
 * ✅ Implemented miniature information display
 * ✅ Created sample data structure for miniature information
+
+### Phase 2 - NFC Integration
+
+* ✅ Integrated NFC module (PN532) using SPI
+* ✅ Implemented NTAG215 tag reading (UID and data blocks)
+* ✅ Updated LED strip indication based on tag status
+
+### Phase 3 - microSD Storage
+
+* ✅ Integrated microSD card module (SPI)
+* ✅ Implemented JSON storage format for miniature data
+* ✅ Loaded and saved miniature data to/from microSD
+* ✅ Validated read/write cycles with microSD
 
 ### Next Steps
 
