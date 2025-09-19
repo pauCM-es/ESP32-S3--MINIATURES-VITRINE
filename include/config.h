@@ -18,12 +18,12 @@
 #define TFT_CS   10  // CS pin (Chip Select)
 #define TFT_DC   14  // DC pin (Data/Command)
 #define TFT_RST  18  // RES pin (Reset)
-#define TFT_SCLK 12  // Hardware SPI SCLK
-#define TFT_MOSI 11  // Hardware SPI MOSI
+#define TFT_SCLK 12  // [SCL] Hardware SPI SCLK
+#define TFT_MOSI 11  // [SDA] Hardware SPI MOSI
 #define TFT_BLK  19  // BLK pin (Backlight control - PWM capable)
 // Dimensions for 1.9" ST7789 display
-#define TFT_WIDTH  320  // Common resolution for ST7789
-#define TFT_HEIGHT 170  // Common resolution for ST7789
+#define TFT_WIDTH 170   // Common resolution for ST7789
+#define TFT_HEIGHT 320  // Common resolution for ST7789
 
 // Rotary Encoder
 // Using GPIO pins with interrupt capability

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "config.h"
 #include "led_control.h"
-#include "tft_display_control.h" // Cambiado a TFT display
+#include "tft_display_control.h" // Changed to TFT display
 #include "encoder_control.h"
 
 // Pin connections for ESP32-S3:
@@ -12,7 +12,7 @@
 
 // Create instances of our control classes
 LedControl ledControl;
-TFTDisplayControl displayControl; // Cambiado a TFTDisplayControl
+TFTDisplayControl displayControl; // Changed to TFTDisplayControl
 EncoderControl encoderControl;
 
 // Current miniature index
@@ -51,16 +51,10 @@ void loop() {
     // Update current index from encoder
     currentIndex = encoderControl.getCurrentIndex();
     
-    // Primero apagar todos los LEDs para evitar interferencias
-    ledControl.clearAll();
-    
-    // Actualizar la pantalla sin LEDs encendidos
+    // Update display with new miniature info
     displayControl.showMiniatureInfo(currentIndex);
     
-    // Pequeña pausa para separar operaciones
-    delay(5);
-    
-    // Ahora encender el LED correspondiente
+    // Highlight the corresponding LED position
     ledControl.lightPosition(currentIndex, ledControl.getYellow());
     
     Serial.print("Selected position: ");

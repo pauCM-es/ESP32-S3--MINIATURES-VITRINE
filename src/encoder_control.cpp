@@ -51,7 +51,7 @@ bool EncoderControl::checkMovement() {
     return false;  // No change
 }
 
-// Check if button has been pressed with debounce
+// Check if the button has been pressed with debounce
 bool EncoderControl::isButtonPressed() {
     // Read the current state of the button (inverted because of pull-up)
     bool reading = !digitalRead(ENCODER_BUTTON);
