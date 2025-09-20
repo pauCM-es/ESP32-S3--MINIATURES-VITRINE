@@ -107,9 +107,9 @@ The project is organized into multiple files for better maintainability:
 
 ## 🔧 ESP32-S3 Pin Definitions
 
-![ESP32-S3 Pin Definitions](images/esp32s3_pin_definitions.jpg)
+![ESP32-S3 Pin Definitions](images/esp32s3_pin_definitions.png)
 
-*Note: Save the image shown above to the `images` folder as `esp32s3_pin_definitions.jpg`*
+*Note: Save the image shown above to the `images` folder as `esp32s3_pin_definitions.png`*
 
 ### Updated Display Configuration
 
