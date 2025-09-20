@@ -59,8 +59,8 @@ void setup() {
   Serial.println("Pantalla limpiada");
   
   // Dibujar un borde para visualizar los límites de la pantalla
-  tft.drawRect(0, 0,  TFT_HEIGHT, TFT_WIDTH, CYAN);
-  tft.drawRect(2, 2, TFT_HEIGHT - 4, TFT_WIDTH - 4, CYAN);
+  // tft.drawRect(0, 0,  TFT_HEIGHT, TFT_WIDTH, CYAN);
+  // tft.drawRect(2, 2, TFT_HEIGHT - 4, TFT_WIDTH - 4, CYAN);
   Serial.println("Borde dibujado");
 
   // Mostrar un título

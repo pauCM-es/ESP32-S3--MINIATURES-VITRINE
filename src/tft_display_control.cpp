@@ -28,20 +28,7 @@ bool TFTDisplayControl::begin() {
     display->fillScreen(BLACK);
     
     // Display initial message to confirm the display is working
-    display->setTextSize(2);
-    display->setTextColor(WHITE);
-    display->setCursor(10, 10);
-    display->println("ST7789 TFT Display");
-    display->setTextSize(1);
-    display->setCursor(10, 40);
-    display->println("1.9 inch IPS Display");
-    display->setCursor(10, 60);
-    display->println("ESP32-S3 Miniatures Vitrine");
-    display->setCursor(10, 80);
-    display->println("Initializing...");
-    
-    // Draw a border
-    drawBorder(CYAN);
+    showMessage("Initializing...", 10, 10, 2, WHITE);
     
     // Delay to show the startup message
     delay(2000);
@@ -59,6 +46,70 @@ void TFTDisplayControl::fillScreen(uint16_t color) {
     display->fillScreen(color);
 }
 
+void TFTDisplayControl::showWrappedMessage (const char* message, int x, int y, int size, uint16_t color) {
+    display->setTextSize(size);
+    display->setTextColor(color);
+
+    int cursorY = y; // Keep the initial Y position
+    int maxWidth = TFT_WIDTH - x; // Maximum allowed width for the text
+    char buffer[256]; // Buffer to handle the text
+    strncpy(buffer, message, sizeof(buffer) - 1);
+    buffer[sizeof(buffer) - 1] = '\0'; // Ensure the text is null-terminated
+
+    char* token = strtok(buffer, " "); // Split the text into words
+    String line = "";
+
+    while (token != nullptr) {
+        String word = String(token);
+        int16_t x1, y1;
+        uint16_t w, h;
+
+        // Calculate the width of the current line with the new word
+        display->getTextBounds((line + " " + word).c_str(), x, cursorY, &x1, &y1, &w, &h);
+
+        if (w > maxWidth) {
+            // If the line is too long, print the current line and start a new one
+            display->setCursor(x, cursorY);
+            display->println(line.c_str());
+            cursorY += h; // Move the cursor to the next line
+            line = word; // Start a new line with the current word
+        } else {
+            // If the line fits, add the word to the current line
+            if (!line.isEmpty()) {
+                line += " ";
+            }
+            line += word;
+        }
+
+        token = strtok(nullptr, " "); // Move to the next word
+    }
+
+    // Print the last line
+    if (!line.isEmpty()) {
+        display->setCursor(x, cursorY);
+        display->println(line.c_str());
+    }
+}
+
+// void TFTDisplayControl::showMessageWithColors(const char* part1, uint16_t color1, const char* part2, uint16_t color2, int x, int y, int size) {
+//     display->setTextSize(size);
+
+//     // Set color for the first part and print it
+//     display->setTextColor(color1);
+//     display->setCursor(x, y);
+//     display->print(part1);
+
+//     // Calculate the width of the first part to position the second part correctly
+//     int16_t x1, y1;
+//     uint16_t w, h;
+//     display->getTextBounds(part1, x, y, &x1, &y1, &w, &h);
+
+//     // Set color for the second part and print it
+//     display->setTextColor(color2);
+//     display->setCursor(x + w, y); // Start the second part right after the first part
+//     display->print(part2);
+// }
+
 // Display miniature information
 void TFTDisplayControl::showMiniatureInfo(int index) {
     if (index < 0 || index >= MAX_MINIATURES) {
@@ -66,34 +117,23 @@ void TFTDisplayControl::showMiniatureInfo(int index) {
     }
     
     clear();
-    drawBorder(BLUE);
     
-    // Display title
-    display->setTextSize(3);
-    display->setTextColor(YELLOW);
-    display->setCursor(10, 20);
-    display->println(DEMO_MINIATURES[index].name);
+    showTitle(DEMO_MINIATURES[index].name, YELLOW);
+    showSubTitle(DEMO_MINIATURES[index].author, MAGENTA);
+
+    showMessage(
+        "Design by: ", 10, 80, 2, WHITE
+    );
+    showMessage(
+        DEMO_MINIATURES[index].author, 10, 100, 2, CYAN
+    );
+    showMessage(
+        "Painted: ", 10, 125, 2, WHITE
+    );
+    showMessage(
+        DEMO_MINIATURES[index].date, 10, 145, 2, CYAN
+    );
     
-    // Display position
-    display->setTextSize(1);
-    display->setTextColor(WHITE);
-    display->setCursor(10, 60);
-    display->print("Position: ");
-    display->println(index + 1);  // Display 1-based position for user
-    
-    // Display author
-    display->setTextSize(2);
-    display->setCursor(10, 80);
-    display->print("Design by: ");
-    display->setTextColor(CYAN);
-    display->println(DEMO_MINIATURES[index].author);
-    
-    // Display date
-    display->setTextColor(WHITE);
-    display->setCursor(10, 120);
-    display->print("Date: ");
-    display->setTextColor(GREEN);
-    display->println(DEMO_MINIATURES[index].date);
 }
 
 // Show a message at the specified location
@@ -109,6 +149,21 @@ void TFTDisplayControl::showTitle(const char* title, uint16_t color) {
     int16_t x1, y1;
     uint16_t w, h;
     
+    display->setTextSize(3);
+    display->setTextColor(color);
+    
+    // Calculate width of title text
+    display->getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
+    
+    // Center the text
+    display->setCursor((TFT_HEIGHT - w) / 2, 15);
+    display->println(title);
+}
+
+void TFTDisplayControl::showSubTitle(const char* title, uint16_t color) {
+    int16_t x1, y1;
+    uint16_t w, h;
+
     display->setTextSize(2);
     display->setTextColor(color);
     
@@ -116,22 +171,8 @@ void TFTDisplayControl::showTitle(const char* title, uint16_t color) {
     display->getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
     
     // Center the text
-    display->setCursor((TFT_WIDTH - w) / 2, 10);
+    display->setCursor((TFT_HEIGHT - w) / 2, 45);
     display->println(title);
-}
-
-// Show navigation help
-void TFTDisplayControl::showNavHelp() {
-    display->setTextSize(1);
-    display->setTextColor(YELLOW);
-    display->setCursor(10, TFT_HEIGHT - 20);
-    display->println("< Turn encoder to navigate >");
-}
-
-// Draw a simple border
-void TFTDisplayControl::drawBorder(uint16_t color) {
-    display->drawRect(0, 0, TFT_HEIGHT, TFT_WIDTH, color);
-    display->drawRect(2, 2, TFT_HEIGHT - 4, TFT_WIDTH - 4, color);
 }
 
 // Utility method to get display pointer for advanced operations

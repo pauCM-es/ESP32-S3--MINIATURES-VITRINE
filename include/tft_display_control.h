@@ -20,6 +20,7 @@ private:
     static const uint16_t YELLOW = 0xFFE0;
     static const uint16_t CYAN = 0x07FF;
     static const uint16_t MAGENTA = 0xF81F;
+    static const uint16_t ORANGE = 0xF8C0;
     
 public:
     // Constructor
@@ -39,15 +40,10 @@ public:
     
     // Show a message at the specified location
     void showMessage(const char* message, int x, int y, int size = 1, uint16_t color = WHITE);
-    
+    void showWrappedMessage (const char* message, int x, int y, int size = 1, uint16_t color = WHITE);
     // Show a centered title
     void showTitle(const char* title, uint16_t color = WHITE);
-    
-    // Show navigation help
-    void showNavHelp();
-    
-    // Draw a simple border
-    void drawBorder(uint16_t color = WHITE);
+    void showSubTitle(const char* title, uint16_t color = WHITE);
     
     // Utility method to get display pointer for advanced operations
     Adafruit_ST7789* getDisplay();
@@ -62,6 +58,7 @@ public:
     uint16_t getYellowColor() { return YELLOW; }
     uint16_t getCyanColor() { return CYAN; }
     uint16_t getMagentaColor() { return MAGENTA; }
+    uint16_t getOrangeColor() { return ORANGE; }
 };
 
 #endif // TFT_DISPLAY_CONTROL_H
