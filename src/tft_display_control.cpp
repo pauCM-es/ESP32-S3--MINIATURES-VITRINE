@@ -22,7 +22,7 @@ bool TFTDisplayControl::begin() {
     display->init(TFT_WIDTH, TFT_HEIGHT);
     
     // Set rotation (0-3) - may need to be adjusted based on your specific display orientation
-    display->setRotation(0);
+    display->setRotation(1);
     
     // Fill with black to clear any initial artifacts
     display->fillScreen(BLACK);
@@ -69,35 +69,31 @@ void TFTDisplayControl::showMiniatureInfo(int index) {
     drawBorder(BLUE);
     
     // Display title
-    display->setTextSize(2);
+    display->setTextSize(3);
     display->setTextColor(YELLOW);
-    display->setCursor(10, 10);
+    display->setCursor(10, 20);
     display->println(DEMO_MINIATURES[index].name);
     
     // Display position
     display->setTextSize(1);
     display->setTextColor(WHITE);
-    display->setCursor(10, 40);
+    display->setCursor(10, 60);
     display->print("Position: ");
     display->println(index + 1);  // Display 1-based position for user
     
     // Display author
-    display->setCursor(10, 60);
-    display->print("By: ");
+    display->setTextSize(2);
+    display->setCursor(10, 80);
+    display->print("Design by: ");
     display->setTextColor(CYAN);
     display->println(DEMO_MINIATURES[index].author);
     
     // Display date
     display->setTextColor(WHITE);
-    display->setCursor(10, 80);
+    display->setCursor(10, 120);
     display->print("Date: ");
     display->setTextColor(GREEN);
     display->println(DEMO_MINIATURES[index].date);
-    
-    // Show navigation instruction
-    display->setTextColor(MAGENTA);
-    display->setCursor(10, TFT_HEIGHT - 20);
-    display->println("Turn encoder to navigate");
 }
 
 // Show a message at the specified location
@@ -134,8 +130,8 @@ void TFTDisplayControl::showNavHelp() {
 
 // Draw a simple border
 void TFTDisplayControl::drawBorder(uint16_t color) {
-    display->drawRect(0, 0, TFT_WIDTH, TFT_HEIGHT, color);
-    display->drawRect(2, 2, TFT_WIDTH - 4, TFT_HEIGHT - 4, color);
+    display->drawRect(0, 0, TFT_HEIGHT, TFT_WIDTH, color);
+    display->drawRect(2, 2, TFT_HEIGHT - 4, TFT_WIDTH - 4, color);
 }
 
 // Utility method to get display pointer for advanced operations

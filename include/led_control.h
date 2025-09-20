@@ -28,9 +28,6 @@ public:
     // Clear all LEDs (turn them off by setting to 0)
     void clearAll();
     
-    // Run a simple animation sequence
-    void runAnimation(int cycles);
-    
     // Color creation and getters
     uint32_t getColor(uint8_t r, uint8_t g, uint8_t b);
     uint32_t getRed();

@@ -3,7 +3,8 @@
 
 // Pin definitions
 // NeoPixel LED strip - Using GPIO48 (compatible with LED output)
-#define LED_PIN 47
+#define LED_PIN 5
+#define LED_INTERNAL_PIN 48
 #define NUM_LEDS 3
 
 // OLED Display (I2C)
@@ -29,10 +30,10 @@
 // Using GPIO pins with interrupt capability
 #define ENCODER_PIN_A 15  // GPIO15 (RTC/GPIO/TOUCH capable)
 #define ENCODER_PIN_B 16  // GPIO16 (RTC/GPIO/TOUCH capable)
-#define ENCODER_BUTTON 17 // GPIO17 (cambiado de GPIO14 para evitar conflicto con TFT DC)
+#define ENCODER_BUTTON 17 // GPIO17
 
 // Additional Button
-#define MODE_BUTTON 9    // GPIO9 (cambiado de GPIO17 para evitar conflicto)
+#define MODE_BUTTON 9    // GPIO9
 
 // Animation and timing constants
 #define POSITION_DISPLAY_TIME 2000  // ms to display a position
@@ -51,9 +52,10 @@ struct Miniature {
 
 // Sample miniature data
 const Miniature DEMO_MINIATURES[MAX_MINIATURES] = {
-    {"Knight", "John Smith", "2020-01-15"},
-    {"Dragon", "Maria Garcia", "2021-05-22"},
-    {"Castle", "David Lee", "2022-11-03"}
+    {"Captain America", "Marvel United", "Mayo 2025"},
+    {"Batman", "Hall of Heroes", "Junio 2025"},
+    {"Corrupted Dwarves", "StationForge", "Julio 2025"},
+    // {"Cyberpunk", "Heroes Infinite", "Agosto 2025"}
 };
 
 #endif // CONFIG_H

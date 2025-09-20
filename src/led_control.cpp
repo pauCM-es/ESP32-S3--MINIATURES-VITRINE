@@ -9,8 +9,8 @@ LedControl::LedControl() {
 void LedControl::begin() {
     strip->begin();
     strip->clear();
+    strip->setBrightness(125); // Default to 12/255 brightness (about 5%)
     strip->show();
-    strip->setBrightness(12); // Default to 12/255 brightness (about 5%)
 }
 
 // Set brightness (0-255)
@@ -50,19 +50,6 @@ void LedControl::clearAll() {
     interrupts();
 }
 
-// Run a simple animation sequence
-void LedControl::runAnimation(int cycles) {
-    for (int i = 0; i < cycles; i++) {
-        // Cycle through positions
-        for (int pos = 0; pos < NUM_LEDS; pos++) {
-            clearAll();
-            strip->setPixelColor(pos, strip->Color(255, 255, 255));
-            strip->show();
-            delay(ANIMATION_SPEED);
-        }
-    }
-    clear();
-}
 
 // Color helper methods
 uint32_t LedControl::getColor(uint8_t r, uint8_t g, uint8_t b) {

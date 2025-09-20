@@ -15,20 +15,18 @@ LedControl ledControl;
 TFTDisplayControl displayControl; // Changed to TFTDisplayControl
 EncoderControl encoderControl;
 
+Adafruit_NeoPixel ledStrip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
+
 // Current miniature index
 int currentIndex = 0;
 
 void setup() {
   // Initialize serial communication
   Serial.begin(115200);
-  Serial.println("ESP32-S3 Miniatures Vitrine - Phase 1 & 2");
-  Serial.println("Configuration: LED=GPIO47, Encoder=(15,16,17)");
-  Serial.println("TFT Display: CS=10, DC=14, RST=18, SCK=12, MOSI=11, BLK=19 (Hardware SPI)");
-  
+  Serial.println("Setup started...");
   // Initialize LED strip
-  ledControl.begin();
+  // ledControl.begin();
   Serial.println("LED strip initialized");
-  
   // Initialize TFT display
   if (!displayControl.begin()) {
     Serial.println("Failed to initialize TFT display!");
@@ -42,10 +40,17 @@ void setup() {
   // Set initial position
   currentIndex = 0;
   displayControl.showMiniatureInfo(currentIndex);
-  ledControl.lightPosition(currentIndex, ledControl.getYellow());
+  // ledControl.lightPosition(currentIndex, ledControl.getYellow());
+
+  ledStrip.begin();
+  ledStrip.setBrightness(150);
+  ledStrip.setPixelColor(currentIndex, ledStrip.Color(255, 0, 0)); // Establecer en rojo
+  ledStrip.show();
 }
 
 void loop() {
+  Serial.println("Loop iteration...");
+  // delay(5000);
   // Check for encoder movement
   if (encoderControl.checkMovement()) {
     // Update current index from encoder
@@ -55,8 +60,10 @@ void loop() {
     displayControl.showMiniatureInfo(currentIndex);
     
     // Highlight the corresponding LED position
-    ledControl.lightPosition(currentIndex, ledControl.getYellow());
-    
+    // ledControl.lightPosition(currentIndex, ledControl.getYellow());
+    ledStrip.clear();
+    ledStrip.setPixelColor(currentIndex, ledStrip.Color(255, 0, 0));
+    ledStrip.show();
     Serial.print("Selected position: ");
     Serial.println(currentIndex);
   }
@@ -64,13 +71,16 @@ void loop() {
   // Check for encoder button press
   if (encoderControl.isButtonPressed()) {
     Serial.println("Button pressed!");
+    ledStrip.setPixelColor(currentIndex, ledStrip.Color(0, 0, 255));
+    ledStrip.show();
+    // // Confirm selection by changing color to green
+    // ledControl.lightPosition(currentIndex, ledControl.getGreen());
+    delay(1000);
+     ledStrip.setPixelColor(currentIndex, ledStrip.Color(255, 0, 0));
+    ledStrip.show();
     
-    // Confirm selection by changing color to green
-    ledControl.lightPosition(currentIndex, ledControl.getGreen());
-    delay(500);
-    
-    // Return to selected position
-    ledControl.lightPosition(currentIndex, ledControl.getYellow());
+    // // Return to selected position
+    // ledControl.lightPosition(currentIndex, ledControl.getYellow());
   }
   
   // Small delay to prevent CPU hogging
