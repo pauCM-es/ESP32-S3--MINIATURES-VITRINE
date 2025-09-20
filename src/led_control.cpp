@@ -32,22 +32,16 @@ void LedControl::lightPosition(int position, uint32_t color) {
     
     clearAll();
     
-    // Deshabilitar interrupciones durante la actualización del LED
-    noInterrupts();
     strip->setPixelColor(position, color);
     strip->show();
-    interrupts();
 }
 
 // Add clearAll method implementation to turn off all LEDs
 void LedControl::clearAll() {
-    // Deshabilitar interrupciones durante la actualización de LEDs
-    noInterrupts();
     for (int i = 0; i < NUM_LEDS; i++) {
         strip->setPixelColor(i, 0);
     }
     strip->show();
-    interrupts();
 }
 
 

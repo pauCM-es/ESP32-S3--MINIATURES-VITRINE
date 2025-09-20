@@ -5,7 +5,7 @@
 // NeoPixel LED strip - Using GPIO48 (compatible with LED output)
 #define LED_PIN 5
 #define LED_INTERNAL_PIN 48
-#define NUM_LEDS 3
+#define NUM_LEDS 6
 
 // OLED Display (I2C)
 #define OLED_SDA 8
@@ -41,7 +41,7 @@
 #define PAUSE_TIME 1000             // ms pause between cycles
 
 // Maximum number of miniatures (positions)
-#define MAX_MINIATURES 3  // For now, just 3 positions
+#define MAX_MINIATURES 6  // For now, just 6 positions
 
 // Demo data structure for miniatures
 struct Miniature {
@@ -55,7 +55,9 @@ const Miniature DEMO_MINIATURES[MAX_MINIATURES] = {
     {"Captain America", "Marvel United", "Mayo 2025"},
     {"Batman", "Hall of Heroes", "Junio 2025"},
     {"Corrupted Dwarves", "StationForge", "Julio 2025"},
-    // {"Cyberpunk", "Heroes Infinite", "Agosto 2025"}
+    {"Cyberpunk", "Heroes Infinite", "Agosto 2025"},
+    {"Elf Archer", "Fantasy Miniatures", "Septiembre 2025"},
+    {"Space Marine", "Galactic Warriors", "Octubre 2025"}
 };
 
 #endif // CONFIG_H
