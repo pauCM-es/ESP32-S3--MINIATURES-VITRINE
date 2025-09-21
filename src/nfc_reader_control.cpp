@@ -1,6 +1,7 @@
 #include "nfc_reader_control.h"
 #include "config.h"
 #include <Wire.h>
+#include <ArduinoJson.h> // Include the ArduinoJson library
 
 // Constructor
 NFCReaderControl::NFCReaderControl() {
@@ -38,4 +39,49 @@ bool NFCReaderControl::readTagUID(uint8_t* uidBuffer, uint8_t& uidLength) {
         return true;
     }
     return false;
+}
+
+bool NFCReaderControl::readTagContext(uint8_t* uidBuffer, uint8_t uidLength, JsonDocument& jsonDoc) {
+    uint8_t data[32]; // Buffer to store the tag data
+    String result = ""; // Accumulate decoded text
+
+    // Read multiple pages
+    for (uint8_t page = 4; page < 42; page++) {
+        if (nfc->ntag2xx_ReadPage(page, data)) {
+            // Process the data
+            for (uint8_t i = 0; i < 4; i++) {
+                if (data[i] > 0x1F && data[i] != 0xFE) { // Ignore non-printable characters
+                    result += (char)data[i];
+                }
+            }
+        } else {
+            Serial0.println("[readTagContext] Failed to read page.");
+            return false;
+        }
+    }
+
+    // Extract the JSON object
+    int jsonStart = result.indexOf('{'); // Find the start of the JSON object
+    int jsonEnd = result.lastIndexOf('}'); // Find the end of the JSON object
+
+    if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+        String jsonObject = result.substring(jsonStart, jsonEnd + 1); // Extract the JSON object
+        Serial0.print("[readTagContext] Extracted JSON: ");
+        Serial0.println(jsonObject);
+
+        // Parse the JSON object
+        DeserializationError error = deserializeJson(jsonDoc, jsonObject);
+        if (error) {
+            Serial0.print("[readTagContext] JSON parsing failed: ");
+            Serial0.println(error.c_str());
+            return false;
+        }
+
+        // Successfully parsed JSON
+        Serial0.println("[readTagContext] JSON parsed successfully.");
+        return true;
+    } else {
+        Serial0.println("[readTagContext] No valid JSON object found.");
+        return false;
+    }
 }

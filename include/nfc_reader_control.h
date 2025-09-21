@@ -2,6 +2,7 @@
 #define NFC_READER_CONTROL_H
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include <Adafruit_PN532.h>
 #include <Wire.h>
 
@@ -19,6 +20,9 @@ public:
 
     // Read the UID of the NFC tag
     bool readTagUID(uint8_t* uidBuffer, uint8_t& uidLength);
+
+    bool readTagContext(uint8_t* uidBuffer, uint8_t uidLength, JsonDocument& jsonDoc);
+
 };
 
 #endif // NFC_READER_CONTROL_H
