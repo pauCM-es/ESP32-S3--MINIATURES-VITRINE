@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <Adafruit_PN532.h>
+#include <Wire.h>
 
 class NFCReaderControl {
 private:
@@ -11,13 +12,10 @@ private:
 
 public:
     // Constructor
-    NFCReaderControl(TwoWire* wireInstance, Adafruit_PN532* nfcInstance);
+    NFCReaderControl();
 
     // Initialize the NFC reader
     bool begin();
-
-    // Check if an NFC tag is present
-    bool isTagPresent();
 
     // Read the UID of the NFC tag
     bool readTagUID(uint8_t* uidBuffer, uint8_t& uidLength);

@@ -1,10 +1,11 @@
 #include "nfc_reader_control.h"
 #include "config.h"
+#include <Wire.h>
 
 // Constructor
-NFCReaderControl::NFCReaderControl(TwoWire* wireInstance, Adafruit_PN532* nfcInstance) {
-    wire = wireInstance; // Store the Wire instance
-    nfc = nfcInstance;   // Store the NFC instance
+NFCReaderControl::NFCReaderControl() {
+  wire = new TwoWire(1); // Use I2C bus 1
+  nfc = new Adafruit_PN532(NFC_SDA, NFC_SCL, wire);
 }
 
 // Initialize the NFC reader
@@ -29,11 +30,6 @@ bool NFCReaderControl::begin() {
     nfc->SAMConfig();
     Serial0.println("NFC reader initialized");
     return true;
-}
-
-// Check if an NFC tag is present
-bool NFCReaderControl::isTagPresent() {
-    return nfc->readPassiveTargetID(PN532_MIFARE_ISO14443A, nullptr, nullptr);
 }
 
 // Read the UID of the NFC tag
