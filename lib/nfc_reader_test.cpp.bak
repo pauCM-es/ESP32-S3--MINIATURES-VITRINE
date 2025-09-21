@@ -1,0 +1,50 @@
+#include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_PN532.h>
+#include "config.h"
+
+// Create an instance of the NFC reader
+TwoWire customWire = TwoWire(1); // Use I2C bus 1
+Adafruit_PN532 nfc(NFC_SDA, NFC_SCL, &customWire);
+
+void setup() {
+    // Initialize serial0 communication
+    Serial0.begin(115200);
+    Serial0.println("NFC Reader Test");
+    customWire.begin(NFC_SDA, NFC_SCL);
+
+    // Initialize the NFC reader
+    if (!nfc.begin()) {
+        Serial0.println("Failed to initialize NFC reader");
+        while (1); // Halt execution if initialization fails
+    }
+
+    uint32_t versionData = nfc.getFirmwareVersion();
+    if (!versionData) {
+        Serial0.println("Didn't find PN53x board");
+        while (1); // Halt execution if initialization fails
+    }
+
+    nfc.SAMConfig();
+    Serial0.println("NFC reader initialized");
+}
+
+void loop() {
+    uint8_t uid[7];
+    uint8_t uidLength;
+
+    if (nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength)) {
+        Serial0.print("NFC Tag UID: ");
+        for (uint8_t i = 0; i < uidLength; i++) {
+            Serial0.print(uid[i], HEX);
+            if (i < uidLength - 1) {
+                Serial0.print(":");
+            }
+        }
+        Serial0.println();
+    } else {
+        Serial0.println("No NFC tag detected");
+    }
+
+    delay(1000); // Wait for 1 second before checking again
+}

@@ -216,14 +216,7 @@ Many pins on the ESP32-S3 have multiple functions which can be selected in softw
 
 ## 🛠️ Current Progress
 
-### Phase 1 - Initial Implementation
-
-* ✅ Basic LED control with 3 positions implemented
-* ✅ Different colors for each position
-* ✅ Simple animation sequence added
-* ✅ Serial monitoring for debugging
-
-### Phase 1-2 - Display and Encoder Integration
+### Phase 1- Display, Leds and Encoder Integration
 
 * ✅ Project refactored into multiple files for better maintainability
 * ✅ Added display integration OLED/TFT
