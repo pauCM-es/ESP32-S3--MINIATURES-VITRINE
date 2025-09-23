@@ -37,7 +37,8 @@ public:
     
     // Display miniature information
     void showMiniatureInfo(int index);
-    
+    void showInfo(const char* title, const char* subtitle, const char* author, const char* date);
+    void showMode(const char* mode, const char* message);
     // Show a message at the specified location
     void showMessage(const char* message, int x, int y, int size = 1, uint16_t color = WHITE);
     void showWrappedMessage (const char* message, int x, int y, int size = 1, uint16_t color = WHITE);
@@ -45,6 +46,7 @@ public:
     void showTitle(const char* title, uint16_t color = WHITE);
     void showSubTitle(const char* title, uint16_t color = WHITE);
     
+    void getCenterXPosition(const char* text, int& centerXPosition);
     // Utility method to get display pointer for advanced operations
     Adafruit_ST7789* getDisplay();
     

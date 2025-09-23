@@ -91,25 +91,6 @@ void TFTDisplayControl::showWrappedMessage (const char* message, int x, int y, i
     }
 }
 
-// void TFTDisplayControl::showMessageWithColors(const char* part1, uint16_t color1, const char* part2, uint16_t color2, int x, int y, int size) {
-//     display->setTextSize(size);
-
-//     // Set color for the first part and print it
-//     display->setTextColor(color1);
-//     display->setCursor(x, y);
-//     display->print(part1);
-
-//     // Calculate the width of the first part to position the second part correctly
-//     int16_t x1, y1;
-//     uint16_t w, h;
-//     display->getTextBounds(part1, x, y, &x1, &y1, &w, &h);
-
-//     // Set color for the second part and print it
-//     display->setTextColor(color2);
-//     display->setCursor(x + w, y); // Start the second part right after the first part
-//     display->print(part2);
-// }
-
 // Display miniature information
 void TFTDisplayControl::showMiniatureInfo(int index) {
     if (index < 0 || index >= MAX_MINIATURES) {
@@ -134,6 +115,38 @@ void TFTDisplayControl::showMiniatureInfo(int index) {
         DEMO_MINIATURES[index].date, 10, 145, 2, CYAN
     );
     
+}
+
+void TFTDisplayControl::showInfo(const char* title, const char* subtitle, const char* author, const char* date) {
+    clear();
+    
+    showTitle(title, YELLOW);
+    showSubTitle(subtitle, MAGENTA);
+
+    showMessage(
+        "Design by: ", 10, 80, 2, WHITE
+    );
+    showMessage(
+        author, 10, 100, 2, CYAN
+    );
+    showMessage(
+        "Painted: ", 10, 125, 2, WHITE
+    );
+    showMessage(
+        date, 10, 145, 2, CYAN
+    );
+    
+}
+
+void TFTDisplayControl::showMode(const char* mode, const char* message) {
+    clear();
+    
+    showTitle(mode, MAGENTA);
+    int centerX = 0;
+    getCenterXPosition(message, centerX);
+    showMessage(
+        message, centerX, 100, 2, CYAN
+    );
 }
 
 // Show a message at the specified location
@@ -173,6 +186,16 @@ void TFTDisplayControl::showSubTitle(const char* title, uint16_t color) {
     // Center the text
     display->setCursor((TFT_HEIGHT - w) / 2, 45);
     display->println(title);
+}
+
+void TFTDisplayControl::getCenterXPosition(const char* text, int& centerXPosition) {
+    int16_t x1, y1;
+    uint16_t w, h;
+
+    // Calculate width of text
+    display->getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+
+    centerXPosition = (TFT_HEIGHT - w) / 2;
 }
 
 // Utility method to get display pointer for advanced operations

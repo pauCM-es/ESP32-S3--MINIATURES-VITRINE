@@ -20,7 +20,7 @@ void EncoderControl::begin() {
     // Configure button pin with pull-up resistor
     pinMode(ENCODER_BUTTON, INPUT_PULLUP);
     
-    Serial.println("Encoder initialized");
+    Serial0.println("Encoder initialized");
 }
 
 // Get current selection index

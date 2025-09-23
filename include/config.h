@@ -32,6 +32,9 @@
 #define ENCODER_PIN_B 16  // GPIO16 (RTC/GPIO/TOUCH capable)
 #define ENCODER_BUTTON 17 // GPIO17
 
+// Mode button
+#define BTN_MODE 7    // GPIO7
+
 // NFC Module (I2C)
 #define NFC_SDA 8  // SDA pin for NFC module
 #define NFC_SCL 9  // SCL pin for NFC module
