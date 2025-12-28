@@ -22,7 +22,7 @@ bool TFTDisplayControl::begin() {
     display->init(TFT_WIDTH, TFT_HEIGHT);
     
     // Set rotation (0-3) - may need to be adjusted based on your specific display orientation
-    display->setRotation(1);
+    display->setRotation(3);
     
     // Fill with black to clear any initial artifacts
     display->fillScreen(BLACK);

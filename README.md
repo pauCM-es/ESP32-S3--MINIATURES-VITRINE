@@ -2,7 +2,7 @@
 
 This project implements a **smart display cabinet** for miniatur### Current Wiring
 
-* **LED Strip** → GPIO 47 (changed from GPIO 48 to avoid onboard LED interference)
+* **LED Strip** → GPIO 5 (changed from GPIO 48 to avoid onboard LED interference)
 * **Display Options:**
   * **OLED I2C** → SDA: GPIO 8, SCL: GPIO 9
   * **TFT SPI** → CS: GPIO 10, DC: GPIO 14, RST: GPIO 18, SCK: GPIO 12 (HW), MOSI: GPIO 11 (HW), BLK: GPIO 19

@@ -23,7 +23,7 @@
 #define TFT_MOSI 11  // [SDA] Hardware SPI MOSI
 #define TFT_BLK  19  // BLK pin (Backlight control - PWM capable)
 // Dimensions for 1.9" ST7789 display
-#define TFT_WIDTH 170   // Common resolution for ST7789
+#define TFT_WIDTH 240   // Common resolution for ST7789
 #define TFT_HEIGHT 320  // Common resolution for ST7789
 
 // Rotary Encoder
@@ -35,7 +35,7 @@
 // Mode button
 #define BTN_MODE 7    // GPIO7
 
-// NFC Module (I2C)
+// NFC Module (I2C)  
 #define NFC_SDA 8  // SDA pin for NFC module
 #define NFC_SCL 9  // SCL pin for NFC module
 #define NFC_ADDR 0x24  // Default I2C address for PN532 (check your module's documentation)

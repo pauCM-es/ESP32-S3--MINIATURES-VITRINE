@@ -15,6 +15,9 @@ NFCReaderControl nfcReader;
 // Current miniature index
 int currentIndex = 0;
 
+// Add a flag to track NFC reader connection
+bool isNFCConnected = false;
+
 void setup() {
   // Initialize serial communication
   Serial0.begin(115200);
@@ -31,11 +34,14 @@ void setup() {
     Serial0.println("TFT display initialized");
   }
 
-    // Initialize the NFC reader
-  if (!nfcReader.begin()) {
-        Serial0.println("Failed to initialize the NFC reader!");
-        while (1); // Halt execution if initialization fails
-    }
+  // Initialize the NFC reader conditionally
+  if (nfcReader.begin()) {
+    Serial0.println("NFC reader initialized");
+    isNFCConnected = true;
+  } else {
+    Serial0.println("NFC reader not connected. NFC features disabled.");
+    isNFCConnected = false;
+  }
   
   // Initialize encoder
   encoderControl.begin();
@@ -83,67 +89,54 @@ void loop() {
   }
 
   
-  if (modeBtnState == LOW){
+  // Execute NFC-related logic only if the NFC reader is connected
+  if (isNFCConnected && modeBtnState == LOW) {
     Serial0.println("Mode button pressed!, Entering NFC read mode...");
     displayControl.showMode("NFC Read", "Reading tag...");
-    
-    
+
     uint8_t uid[7];
     uint8_t uidLength;
     JsonDocument jsonDoc;
 
-     // Record the start time
     unsigned long startTime = millis();
     bool tagReadSuccessfully = false;
     bool tagReadError = false;
 
-    // Enter NFC read mode
     while (millis() - startTime < 10000) { // 10-second timeout
       if (nfcReader.readTagUID(uid, uidLength)) {
         if (nfcReader.readTagContext(uid, uidLength, jsonDoc)) {
           tagReadSuccessfully = true;
           break; 
-
         } else {
           tagReadError = true;
           break;
         }
       } else {
-
         break;
       }
-      // Small delay to prevent CPU hogging
-        delay(10);
-    
+      delay(10);
     }
-    
-    if(tagReadSuccessfully){
-          displayControl.showInfo(
-            jsonDoc["name"] | "Unknown",
-            jsonDoc["team"] | "Unknown",
-            jsonDoc["designBy"] | "Unknown",
-            jsonDoc["painted"] | "Unknown"
-          );
+
+    if (tagReadSuccessfully) {
+      displayControl.showInfo(
+        jsonDoc["name"] | "Unknown",
+        jsonDoc["team"] | "Unknown",
+        jsonDoc["designBy"] | "Unknown",
+        jsonDoc["painted"] | "Unknown"
+      );
     } else if (tagReadError) {
       Serial0.println("Error reading NFC tag data.");
-
       displayControl.clear();
       displayControl.showMessage("Error reading tag!", 10, 100, 2, displayControl.getRedColor());
-      
-      delay(2000); // Display error message for 2 seconds
-      
+      delay(2000);
       displayControl.showMiniatureInfo(currentIndex);
     } else {
       Serial0.println("No NFC tag detected within timeout.");
-
       displayControl.clear();
       displayControl.showMessage("No tag detected!", 10, 100, 2, displayControl.getWhiteColor());
-      
-      delay(2000); // Display no tag message for 2 seconds
-      
+      delay(2000);
       displayControl.showMiniatureInfo(currentIndex);
     }
-    
   }
 
     delay(10);
