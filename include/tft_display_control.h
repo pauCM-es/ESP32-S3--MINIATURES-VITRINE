@@ -45,6 +45,7 @@ public:
     // Show a centered title
     void showTitle(const char* title, uint16_t color = WHITE);
     void showSubTitle(const char* title, uint16_t color = WHITE);
+    void showOptions(const char* options[], int numOptions, int focusIndex);
     
     void getCenterXPosition(const char* text, int& centerXPosition);
     // Utility method to get display pointer for advanced operations

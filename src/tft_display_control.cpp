@@ -207,3 +207,18 @@ Adafruit_ST7789* TFTDisplayControl::getDisplay() {
 uint16_t TFTDisplayControl::color565(uint8_t r, uint8_t g, uint8_t b) {
     return display->color565(r, g, b);
 }
+
+void TFTDisplayControl::showOptions(const char* options[], int numOptions, int focusIndex) {
+    clear();
+
+    for (int i = 0; i < numOptions; i++) {
+        int yPosition = 30 + i * 20; // Adjust spacing between options
+        if (i == focusIndex) {
+            // Highlight the focused option
+            showMessage(options[i], 10, yPosition, 2, YELLOW);
+        } else {
+            // Regular option
+            showMessage(options[i], 10, yPosition, 2, WHITE);
+        }
+    }
+}

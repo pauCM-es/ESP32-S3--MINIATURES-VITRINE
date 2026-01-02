@@ -18,7 +18,7 @@ public:
     
     // Set brightness (0-255)
     void setBrightness(uint8_t brightness);
-    
+
     // Clear all LEDs (using strip->clear())
     void clear();
     
@@ -27,9 +27,13 @@ public:
     
     // Clear all LEDs (turn them off by setting to 0)
     void clearAll();
+
+    void setWhite(uint8_t brightness);
     
     // Color creation and getters
-    uint32_t getColor(uint8_t r, uint8_t g, uint8_t b);
+    uint32_t getColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w);
+    uint32_t getWhite(uint8_t brightnessPercentage);
+    uint32_t getWhiteRGB();
     uint32_t getRed();
     uint32_t getGreen();
     uint32_t getBlue();

@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <ESP32Encoder.h>
 #include "config.h"
+#include "led_control.h"
 
 class EncoderControl {
 private:
@@ -30,6 +31,15 @@ public:
     
     // Check if button has been pressed
     bool isButtonPressed();
+
+    // Check if the button is pressed (short press)
+    bool isShortPress();
+
+    // Check if the button is pressed (long press)
+    bool isLongPress();
+
+    // Method to adjust brightness based on button press
+    void adjustBrightness(LedControl& ledControl);
 };
 
 #endif // ENCODER_CONTROL_H

@@ -1,8 +1,9 @@
 #include "led_control.h"
+#include "color_utils.h" // Include the new color_utils header
 
 // Constructor
 LedControl::LedControl() {
-    strip = new Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
+    strip = new Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_RGBW + NEO_KHZ800);
 }
 
 // Initialize LED strip
@@ -14,7 +15,8 @@ void LedControl::begin() {
 }
 
 // Set brightness (0-255)
-void LedControl::setBrightness(uint8_t brightness) {
+void LedControl::setBrightness(uint8_t brightnessPercentage) {
+    uint8_t brightness = map(brightnessPercentage, 0, 100, 0, 255);
     strip->setBrightness(brightness);
 }
 
@@ -30,8 +32,6 @@ void LedControl::lightPosition(int position, uint32_t color) {
         return;
     }
     
-    clearAll();
-    
     strip->setPixelColor(position, color);
     strip->show();
 }
@@ -44,14 +44,25 @@ void LedControl::clearAll() {
     strip->show();
 }
 
+void LedControl::setWhite(uint8_t brightnessPercentage) {
+    uint8_t brightness = map(brightnessPercentage, 0, 100, 0, 255);
+    strip->fill(strip->Color(0, 0, 0, brightness));
+    strip->show();
+}
+
 
 // Color helper methods
-uint32_t LedControl::getColor(uint8_t r, uint8_t g, uint8_t b) {
-    return strip->Color(r, g, b);
+uint32_t LedControl::getColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+    return strip->Color(r, g, b, w);
+}
+
+uint32_t LedControl::getWhite(uint8_t brightnessPercentage) {
+    uint8_t brightness = map(brightnessPercentage, 0, 100, 0, 255);
+    return strip->Color(0, 0, 0, brightness);
 }
 
 uint32_t LedControl::getRed() {
-    return strip->Color(255, 0, 0);
+    return strip->Color(255,0, 0);
 }
 
 uint32_t LedControl::getGreen() {
@@ -66,6 +77,12 @@ uint32_t LedControl::getYellow() {
     return strip->Color(255, 255, 0);
 }
 
-uint32_t LedControl::getOff() {
-    return strip->Color(0, 0, 0);
+uint32_t LedControl::getWhiteRGB() {
+    return strip->Color(255, 255, 255);
 }
+
+uint32_t LedControl::getOff() {
+    return  strip->Color(0, 0, 0);
+}
+
+

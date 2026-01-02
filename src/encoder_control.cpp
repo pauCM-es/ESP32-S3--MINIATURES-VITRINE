@@ -78,3 +78,67 @@ bool EncoderControl::isButtonPressed() {
     lastButtonState = reading;
     return result;
 }
+
+// Add variables to track brightness adjustment
+bool isIncreasing = true; // Last mode used: true for increase, false for decrease
+unsigned long buttonPressStartTime = 0;
+const unsigned long longPressDuration = 1000; // 1 second for long press
+
+// Add variables to track button press duration
+unsigned long pressStartTime = 0;
+const unsigned long shortPressThreshold = 500; // 500ms for short press
+
+// Check if the button is pressed (short press)
+bool EncoderControl::isShortPress() {
+    if (isButtonPressed()) {
+        if (pressStartTime == 0) {
+            pressStartTime = millis();
+        }
+    } else {
+        if (pressStartTime > 0 && (millis() - pressStartTime < shortPressThreshold)) {
+            pressStartTime = 0; // Reset press start time
+            return true; // Short press detected
+        }
+        pressStartTime = 0; // Reset press start time
+    }
+    return false;
+}
+
+// Check if the button is pressed (long press)
+bool EncoderControl::isLongPress() {
+    if (isButtonPressed()) {
+        if (pressStartTime == 0) {
+            pressStartTime = millis();
+        }
+        if (millis() - pressStartTime >= shortPressThreshold) {
+            return true; // Long press detected
+        }
+    } else {
+        pressStartTime = 0; // Reset press start time
+    }
+    return false;
+}
+
+// Method to adjust brightness
+void EncoderControl::adjustBrightness(LedControl& ledControl) {
+    static uint8_t brightness = 128; // Start with medium brightness (0-255)
+    static unsigned long lastBrightnessUpdate = 0; // Track the last update time
+    const unsigned long brightnessUpdateInterval = 50; // Minimum interval in milliseconds
+
+    if (isLongPress()) {
+        // Adjust brightness only if the update interval has passed
+        if (millis() - lastBrightnessUpdate > brightnessUpdateInterval) {
+            if (isIncreasing) {
+                brightness = min(brightness + 1, 255); // Increase brightness
+            } else {
+                brightness = max(brightness - 1, 0);   // Decrease brightness
+            }
+
+            // Apply the new brightness to the LED control
+            ledControl.setBrightness(brightness);
+
+            // Update the last brightness update time
+            lastBrightnessUpdate = millis();
+        }
+    }
+}
