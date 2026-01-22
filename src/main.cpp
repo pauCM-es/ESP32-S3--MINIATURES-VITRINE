@@ -18,13 +18,16 @@ NFCReaderControl nfcReader;
 LedMovementControl ledMovementControl(ledControl);
 
 // Create an instance of ModeManager
-ModeManager modeManager(ledMovementControl, nfcReader, displayControl);
+ModeManager modeManager(ledMovementControl, nfcReader, displayControl, encoderControl);
 
 // Current miniature index
 int currentIndex = 0;
 
 // Add a flag to track NFC reader connection
 bool isNFCConnected = false;
+
+// Track last state of mode button for edge detection
+int lastModeBtnState = HIGH;
 
 void setup() {
   // Initialize serial communication
@@ -68,6 +71,13 @@ void setup() {
 void loop() {
 
   int modeBtnState = digitalRead(BTN_MODE);
+  // Detect button press (active LOW due to INPUT_PULLUP)
+  if (modeBtnState != lastModeBtnState) {
+    if (modeBtnState == LOW) {
+      Serial0.println("BTN_MODE pressed");
+    }
+    lastModeBtnState = modeBtnState;
+  }
 
   // Check for encoder movement
   if (encoderControl.checkMovement()) {

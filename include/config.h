@@ -5,7 +5,7 @@
 // NeoPixel LED strip - Using GPIO48 (compatible with LED output)
 #define LED_PIN 5
 #define LED_INTERNAL_PIN 48
-#define NUM_LEDS 6
+#define NUM_LEDS 26
 
 // // OLED Display (I2C)
 // #define OLED_SDA 8
@@ -33,11 +33,11 @@
 #define ENCODER_BUTTON 17 // GPIO17
 
 // Mode button
-#define BTN_MODE 7    // GPIO7
+#define BTN_MODE 9    // GPIO7
 
 // NFC Module (I2C)  
 #define NFC_SDA 8  // SDA pin for NFC module
-#define NFC_SCL 9  // SCL pin for NFC module
+#define NFC_SCL 7  // SCL pin for NFC module
 #define NFC_ADDR 0x24  // Default I2C address for PN532 (check your module's documentation)
 
 // // Additional Button
@@ -48,7 +48,7 @@
 #define PAUSE_TIME 1000             // ms pause between cycles
 
 // Maximum number of miniatures (positions)
-#define MAX_MINIATURES 6  // For now, just 6 positions
+#define MAX_MINIATURES 26  // For now, just 6 positions
 
 // Demo data structure for miniatures
 struct Miniature {

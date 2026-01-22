@@ -3,8 +3,8 @@
 #include "nfc_reader_control.h"
 #include "tft_display_control.h"
 
-ModeManager::ModeManager(LedMovementControl& ledMovementControl, NFCReaderControl& nfcReader, TFTDisplayControl& displayControl)
-    : ledMovementControl(ledMovementControl), nfcReader(nfcReader), displayControl(displayControl), standbyBrightness(50) {}
+ModeManager::ModeManager(LedMovementControl& ledMovementControl, NFCReaderControl& nfcReader, TFTDisplayControl& displayControl, EncoderControl& encoderControl)
+    : ledMovementControl(ledMovementControl), nfcReader(nfcReader), displayControl(displayControl), encoderControl(encoderControl) {}
 
 void ModeManager::addNewMiniature() {
     displayControl.showMode("NFC Read", "Reading tag...");
@@ -48,7 +48,7 @@ void ModeManager::setStandbyBrightness(uint8_t brightness) {
    displayControl.showMode("Settings", "Reading tag...");
 }
 
-void ModeManager::selectMode(const char* options[], int numOptions, std::function<void(int)> callback) {
+void ModeManager::selectMode(const char* const options[], int numOptions, std::function<void(int)> callback) {
     int focusIndex = 0;
     bool optionSelected = false;
 

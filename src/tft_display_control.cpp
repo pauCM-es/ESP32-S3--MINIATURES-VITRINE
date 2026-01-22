@@ -98,21 +98,26 @@ void TFTDisplayControl::showMiniatureInfo(int index) {
     }
     
     clear();
-    
-    showTitle(DEMO_MINIATURES[index].name, YELLOW);
-    showSubTitle(DEMO_MINIATURES[index].author, MAGENTA);
+
+    // Fallback to "empty" if the demo entry is not initialized
+    const char* name = DEMO_MINIATURES[index].name ? DEMO_MINIATURES[index].name : "empty";
+    const char* author = DEMO_MINIATURES[index].author ? DEMO_MINIATURES[index].author : "empty";
+    const char* date = DEMO_MINIATURES[index].date ? DEMO_MINIATURES[index].date : "empty";
+
+    showTitle(name, YELLOW);
+    showSubTitle(author, MAGENTA);
 
     showMessage(
         "Design by: ", 10, 80, 2, WHITE
     );
     showMessage(
-        DEMO_MINIATURES[index].author, 10, 100, 2, CYAN
+        author, 10, 100, 2, CYAN
     );
     showMessage(
         "Painted: ", 10, 125, 2, WHITE
     );
     showMessage(
-        DEMO_MINIATURES[index].date, 10, 145, 2, CYAN
+        date, 10, 145, 2, CYAN
     );
     
 }
@@ -208,7 +213,7 @@ uint16_t TFTDisplayControl::color565(uint8_t r, uint8_t g, uint8_t b) {
     return display->color565(r, g, b);
 }
 
-void TFTDisplayControl::showOptions(const char* options[], int numOptions, int focusIndex) {
+void TFTDisplayControl::showOptions(const char* const options[], int numOptions, int focusIndex) {
     clear();
 
     for (int i = 0; i < numOptions; i++) {
