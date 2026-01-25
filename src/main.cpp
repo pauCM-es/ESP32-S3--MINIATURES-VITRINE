@@ -76,7 +76,8 @@ void setup() {
 }
 
 void loop() {
-  server.handleClient();
+  // Handle network requests
+  webServer.handleClient();
 
   int modeBtnState = digitalRead(BTN_MODE);
   // Detect button press (active LOW due to INPUT_PULLUP)
@@ -119,6 +120,3 @@ void loop() {
 
   delay(10);
 }
-
-// Handle network requests
-  webS

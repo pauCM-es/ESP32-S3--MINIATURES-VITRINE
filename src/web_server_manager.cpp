@@ -3,6 +3,7 @@
 #include "version.h"
 #include <ArduinoJson.h>
 #include <WiFi.h>
+#include <functional>
 
 WebServerManager::WebServerManager() : server(80), fsMounted(false) {}
 
@@ -26,18 +27,18 @@ void WebServerManager::handleClient() {
 
 void WebServerManager::setupRoutes() {
     // API endpoints
-    server.on("/api/info", HTTP_GET, [this]() { handleApiInfo(); });
+    server.on("/api/info", HTTP_GET, std::bind(&WebServerManager::handleApiInfo, this));
     
     // Static routes
-    server.on("/", HTTP_GET, [this]() { handleRoot(); });
-    server.on("/index.html", HTTP_GET, [this]() { handleIndexHtml(); });
+    server.on("/", HTTP_GET, std::bind(&WebServerManager::handleRoot, this));
+    server.on("/index.html", HTTP_GET, std::bind(&WebServerManager::handleIndexHtml, this));
     
     // SPA fallback
-    server.onNotFound([this]() { handleNotFound(); });
+    server.onNotFound(std::bind(&WebServerManager::handleNotFound, this));
 }
 
 void WebServerManager::handleApiInfo() {
-    StaticJsonDocument<384> doc;
+    JsonDocument doc;
 
     doc["firmwareVersion"] = FIRMWARE_VERSION;
     doc["webVersion"] = WEB_VERSION;
