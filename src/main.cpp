@@ -43,6 +43,14 @@ static bool fsMounted = false;
 #define HAS_WIFI_SECRETS 0
 #endif
 
+#ifndef AP_SSID
+#define AP_SSID "Vitrine-ESP32S3"
+#endif
+
+#ifndef AP_PASS
+#define AP_PASS "vitrine1234"
+#endif
+
 static const char *getContentType(const String &path) {
   if (path.endsWith(".html")) return "text/html";
   if (path.endsWith(".css")) return "text/css";
@@ -103,11 +111,11 @@ void setup() {
     }
   }
 
-  const char *apSsid = "Vitrine-ESP32S3";
-  const char *apPass = "vitrine1234"; // WPA2 requires >=8 chars
+  const char *apSsid = AP_SSID;
+  const char *apPass = AP_PASS; // WPA2 requires >=8 chars
   if (WiFi.softAP(apSsid, apPass)) {
     LOGI("wifi", "AP started: %s", apSsid);
-    LOGI("wifi", "AP password: %s", apPass);
+    LOGI("wifi", "AP password: (hidden)");
     LOGI("wifi", "AP IP: %s", WiFi.softAPIP().toString().c_str());
   } else {
     LOGW("wifi", "Failed to start AP");
