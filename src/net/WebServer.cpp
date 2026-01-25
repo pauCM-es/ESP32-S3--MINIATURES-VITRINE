@@ -32,6 +32,16 @@ void WebServer::setupRoutes() {
 
     // Step 8: OTA firmware update
     otaFirmware.attach(server, wsServer);
+
+    // Step 8: OTA upload page (served from LittleFS)
+    server.on("/update", HTTP_GET, [this](AsyncWebServerRequest *request) {
+    if (fsMounted && LittleFS.exists("/update/index.html")) {
+        request->send(LittleFS, "/update/index.html", "text/html");
+        return;
+    }
+    request->send(404, "text/plain", "Update page missing in LittleFS (/update/index.html)");
+    });
+    server.serveStatic("/update/", LittleFS, "/update/").setDefaultFile("index.html");
     
     // Static file handler (SPA fallback included)
     server.onNotFound([this](AsyncWebServerRequest *request) {
@@ -123,6 +133,7 @@ const char* WebServer::getContentType(const String &path) {
 bool WebServer::isReservedNonSpaPath(const String &path) {
     if (path == "/ws") return true;
     if (path.startsWith("/api/")) return true;
+    if (path == "/update") return true;
     if (path.startsWith("/update/")) return true;
     return false;
 }

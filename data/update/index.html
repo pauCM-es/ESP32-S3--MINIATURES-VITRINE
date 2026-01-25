@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1" />
+		<title>ESP32 OTA Firmware Update</title>
+		<style>
+			:root {
+				color-scheme: light dark;
+			}
+			body {
+				font-family:
+					system-ui,
+					-apple-system,
+					Segoe UI,
+					Roboto,
+					sans-serif;
+				margin: 0;
+				padding: 24px;
+			}
+			.card {
+				max-width: 720px;
+				margin: 0 auto;
+				padding: 20px;
+				border: 1px solid rgba(127, 127, 127, 0.35);
+				border-radius: 12px;
+			}
+			h1 {
+				margin: 0 0 8px;
+				font-size: 20px;
+			}
+			p {
+				margin: 8px 0;
+				line-height: 1.4;
+			}
+			.row {
+				display: flex;
+				gap: 12px;
+				align-items: center;
+				flex-wrap: wrap;
+			}
+			input[type="file"] {
+				width: 100%;
+				max-width: 520px;
+			}
+			button {
+				padding: 10px 14px;
+				border-radius: 10px;
+				border: 1px solid rgba(127, 127, 127, 0.35);
+				cursor: pointer;
+			}
+			button[disabled] {
+				opacity: 0.6;
+				cursor: not-allowed;
+			}
+			progress {
+				width: 100%;
+				height: 14px;
+			}
+			code,
+			pre {
+				font-family:
+					ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+			}
+			.muted {
+				opacity: 0.75;
+			}
+			.ok {
+				color: #1a7f37;
+			}
+			.bad {
+				color: #d1242f;
+			}
+			.mono {
+				font-family:
+					ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="card">
+			<h1>Firmware Update</h1>
+			<p class="muted">
+				Uploads to <span class="mono">POST /update/firmware</span>.
+				Device will reboot automatically on success.
+			</p>
+
+			<div
+				class="row"
+				style="margin-top: 12px">
+				<input
+					id="file"
+					type="file"
+					accept=".bin,application/octet-stream" />
+				<button id="upload">Upload</button>
+			</div>
+
+			<div style="margin-top: 14px">
+				<progress
+					id="prog"
+					value="0"
+					max="100"></progress>
+				<p
+					id="status"
+					class="muted">
+					Idle.
+				</p>
+			</div>
+
+			<hr
+				style="
+					margin: 16px 0;
+					border: none;
+					border-top: 1px solid rgba(127, 127, 127, 0.25);
+				" />
+
+			<p class="muted">
+				Tip: you can confirm maintenance state via
+				<span class="mono">/api/info</span>.
+			</p>
+			<pre
+				id="info"
+				class="muted"
+				style="white-space: pre-wrap; margin: 10px 0 0"></pre>
+		</div>
+
+		<script>
+			const fileEl = document.getElementById("file");
+			const uploadBtn = document.getElementById("upload");
+			const prog = document.getElementById("prog");
+			const statusEl = document.getElementById("status");
+			const infoEl = document.getElementById("info");
+
+			async function refreshInfo() {
+				try {
+					const res = await fetch("/api/info", { cache: "no-store" });
+					const json = await res.json();
+					infoEl.textContent = JSON.stringify(json, null, 2);
+				} catch {
+					infoEl.textContent = "Could not load /api/info";
+				}
+			}
+
+			function setBusy(busy) {
+				uploadBtn.disabled = busy;
+				fileEl.disabled = busy;
+			}
+
+			uploadBtn.addEventListener("click", () => {
+				const file = fileEl.files && fileEl.files[0];
+				if (!file) {
+					statusEl.textContent = "Select a .bin file first.";
+					return;
+				}
+
+				prog.value = 0;
+				statusEl.textContent = `Uploading ${file.name} (${file.size} bytes)...`;
+				setBusy(true);
+
+				const form = new FormData();
+				form.append("firmware", file, file.name);
+
+				const xhr = new XMLHttpRequest();
+				xhr.open("POST", "/update/firmware");
+
+				xhr.upload.onprogress = (e) => {
+					if (e.lengthComputable) {
+						const pct = Math.round((e.loaded / e.total) * 100);
+						prog.value = pct;
+						statusEl.textContent = `Uploading... ${pct}% (${e.loaded}/${e.total})`;
+					} else {
+						statusEl.textContent = `Uploading... (${e.loaded} bytes)`;
+					}
+				};
+
+				xhr.onerror = () => {
+					statusEl.textContent = "Upload failed (network error).";
+					statusEl.className = "bad";
+					setBusy(false);
+					refreshInfo();
+				};
+
+				xhr.onload = () => {
+					let body = null;
+					try {
+						body = JSON.parse(xhr.responseText);
+					} catch {}
+
+					if (xhr.status >= 200 && xhr.status < 300) {
+						statusEl.textContent = `Success. Written ${body && body.written ? body.written : "?"} bytes. Rebooting...`;
+						statusEl.className = "ok";
+						prog.value = 100;
+					} else {
+						const err =
+							body && body.error ? body.error : xhr.responseText;
+						statusEl.textContent = `Failed (${xhr.status}): ${err}`;
+						statusEl.className = "bad";
+						setBusy(false);
+					}
+
+					refreshInfo();
+				};
+
+				xhr.send(form);
+				refreshInfo();
+			});
+
+			refreshInfo();
+		</script>
+	</body>
+</html>
