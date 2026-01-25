@@ -4,5 +4,10 @@
 .vscode/launch.json
 .vscode/ipch
 
+# Web app (Step 9)
+web/node_modules
+web/dist
+web/.vite
+
 # Local secrets (do not commit)
 include/secrets.h
