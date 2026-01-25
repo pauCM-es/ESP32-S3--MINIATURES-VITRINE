@@ -1,5 +1,6 @@
 #include "WsServer.h"
 #include "../util/Log.h"
+#include "MaintenanceMode.h"
 #include <ArduinoJson.h>
 
 WsServer::WsServer() : ws("/ws") {}
@@ -37,6 +38,12 @@ void WsServer::handleEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
 }
 
 void WsServer::handleConnect(AsyncWebSocketClient *client) {
+    if (MaintenanceMode::getInstance().isActive()) {
+        LOGW("ws", "Rejecting client #%u (maintenance mode)", client->id());
+        client->close();
+        return;
+    }
+
     LOGI("ws", "Client #%u connected from %s", client->id(), client->remoteIP().toString().c_str());
     
     // Send welcome message
@@ -83,6 +90,10 @@ void WsServer::handleTextMessage(AsyncWebSocketClient *client, uint8_t *data, si
 
 void WsServer::broadcastMessage(const char *message) {
     ws.textAll(message);
+}
+
+void WsServer::closeAll() {
+    ws.closeAll();
 }
 
 bool WsServer::hasClients() const {

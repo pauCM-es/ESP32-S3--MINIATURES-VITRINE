@@ -3,6 +3,7 @@
 #include "util/Log.h"
 #include "net/WifiManager.h"
 #include "net/WebServer.h"
+#include "net/MaintenanceMode.h"
 #include "hardware/LedControl.h"
 #include "hardware/DisplayControl.h"
 #include "hardware/EncoderControl.h"
@@ -28,6 +29,7 @@ ModeManager modeManager(ledMovementControl, nfcReader, displayControl, encoderCo
 int currentIndex = 0;
 bool isNFCConnected = false;
 int lastModeBtnState = HIGH;
+bool lastMaintenanceActive = false;
 
 void setup() {
   // Initialize serial communication + logging
@@ -36,6 +38,11 @@ void setup() {
   LOGI("boot", "Build: %s %s", __DATE__, __TIME__);
   LOGI("boot", "SDK: %s", ESP.getSdkVersion());
   LOGI("boot", "CPU Freq: %u MHz", ESP.getCpuFreqMHz());
+
+  // Step 7: Maintenance mode boot trigger (optional)
+  if (MaintenanceMode::checkBootTrigger()) {
+    MaintenanceMode::getInstance().enter();
+  }
 
   // Initialize networking
   wifiManager.begin();
@@ -77,6 +84,20 @@ void setup() {
 
 void loop() {
   // Network is handled asynchronously by ESPAsyncWebServer
+
+  const bool maintenanceActive = MaintenanceMode::getInstance().isActive();
+  if (maintenanceActive) {
+    if (!lastMaintenanceActive) {
+      LOGW("maint", "Maintenance mode active: pausing hardware actions");
+      webServer.getWsServer()->closeAll();
+      ledControl.clearAll();
+    }
+    lastMaintenanceActive = true;
+    delay(50);
+    return;
+  }
+
+  lastMaintenanceActive = false;
   
   int modeBtnState = digitalRead(BTN_MODE);
   // Detect button press (active LOW due to INPUT_PULLUP)

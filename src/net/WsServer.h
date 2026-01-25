@@ -11,6 +11,7 @@ public:
                      AwsEventType type, void *arg, uint8_t *data, size_t len);
     
     void broadcastMessage(const char *message);
+    void closeAll();
     bool hasClients() const;
 
 private:

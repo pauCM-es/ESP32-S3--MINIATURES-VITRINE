@@ -1,5 +1,6 @@
 #include "WebServer.h"
 #include "../util/Log.h"
+#include "MaintenanceMode.h"
 #include "version.h"
 #include <ArduinoJson.h>
 #include <WiFi.h>
@@ -54,6 +55,8 @@ void WebServer::handleApiInfo(AsyncWebServerRequest *request) {
         ip = WiFi.softAPIP().toString();
     }
     doc["ip"] = ip;
+
+    doc["maintenanceMode"] = MaintenanceMode::getInstance().isActive();
 
     if (fsMounted) {
         const size_t total = LittleFS.totalBytes();
