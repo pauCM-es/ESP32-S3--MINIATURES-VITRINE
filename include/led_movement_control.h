@@ -9,16 +9,21 @@ public:
     LedMovementControl(LedControl& ledControl);
 
     // Set all LEDs to standby mode (50% brightness)
-    void setStandbyMode();
+    void setStandbyMode(int brightness);
 
     // Highlight a specific miniature (focus mode)
-    void setFocusMode(int position);
+    void setFocusMode(int position, bool lightUpRest = false);
 
     // Set a specific miniature to selected mode (green color)
     void setSelectedMode(int position);
 
+    boolean getIsStandbyLight() {
+        return isStandbyLight;
+    }
+
 private:
     LedControl& ledControl;
+    boolean isStandbyLight = false;
 };
 
 #endif

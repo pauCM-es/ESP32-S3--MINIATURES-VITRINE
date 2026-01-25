@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include "config.h"
+#include "log.h"
 #include "led_control.h"
 #include "tft_display_control.h" // Changed to TFT display
 #include "encoder_control.h"
@@ -30,27 +31,30 @@ bool isNFCConnected = false;
 int lastModeBtnState = HIGH;
 
 void setup() {
-  // Initialize serial communication
-  Serial0.begin(115200);
-  Serial0.println("Setup started...");
+  // Initialize serial communication + logging
+  Log::begin(Serial0, 115200);
+  LOGI("boot", "Setup started...");
+  LOGI("boot", "Build: %s %s", __DATE__, __TIME__);
+  LOGI("boot", "SDK: %s", ESP.getSdkVersion());
+  LOGI("boot", "CPU Freq: %u MHz", ESP.getCpuFreqMHz());
 
   // Initialize LED strip
   ledControl.begin();
-  Serial0.println("LED strip initialized");
+  LOGI("led", "LED strip initialized");
 
   // Initialize TFT display
   if (!displayControl.begin()) {
-    Serial0.println("Failed to initialize TFT display!");
+    LOGE("display", "Failed to initialize TFT display!");
   } else {
-    Serial0.println("TFT display initialized");
+    LOGI("display", "TFT display initialized");
   }
 
   // Initialize the NFC reader conditionally
   if (nfcReader.begin()) {
-    Serial0.println("NFC reader initialized");
+    LOGI("nfc", "NFC reader initialized");
     isNFCConnected = true;
   } else {
-    Serial0.println("NFC reader not connected. NFC features disabled.");
+    LOGW("nfc", "NFC reader not connected. NFC features disabled.");
     isNFCConnected = false;
   }
   
@@ -65,7 +69,7 @@ void setup() {
   ledMovementControl.setFocusMode(currentIndex);
 
   // Set standby brightness
-  modeManager.setStandbyBrightness(50);
+  // modeManager.setStandbyBrightness(50);
 }
 
 void loop() {
@@ -74,7 +78,10 @@ void loop() {
   // Detect button press (active LOW due to INPUT_PULLUP)
   if (modeBtnState != lastModeBtnState) {
     if (modeBtnState == LOW) {
-      Serial0.println("BTN_MODE pressed");
+      LOGI("btn", "BTN_MODE pressed");
+      const boolean isStandby = ledMovementControl.getIsStandbyLight();
+      ledMovementControl.setFocusMode(currentIndex, !isStandby);
+      
     }
     lastModeBtnState = modeBtnState;
   }
@@ -88,13 +95,12 @@ void loop() {
     displayControl.showMiniatureInfo(currentIndex);
 
     // Highlight the corresponding LED position
-    ledMovementControl.setFocusMode(currentIndex);
+    ledMovementControl.setFocusMode(currentIndex,ledMovementControl.getIsStandbyLight() );
 
-    Serial0.print("Selected position: ");
-    Serial0.println(currentIndex);
+    LOGI("encoder", "Selected position: %d", currentIndex);
   }
    if (encoderControl.isButtonPressed()) {
-    Serial0.println("Button press detected! Selecting LED.");
+    LOGI("encoder", "Button press detected! Selecting LED.");
 
     // Set selected mode
     ledMovementControl.setSelectedMode(currentIndex);

@@ -5,13 +5,20 @@
 LedMovementControl::LedMovementControl(LedControl& ledControl) : ledControl(ledControl) {}
 
 // Set all LEDs to standby mode (50% brightness)
-void LedMovementControl::setStandbyMode() {
-    ledControl.setWhite(50);
+void LedMovementControl::setStandbyMode(int brightness) {
+    ledControl.setWhite(brightness);
 }
 
 // Highlight a specific miniature (focus mode)
-void LedMovementControl::setFocusMode(int position) {
-    setStandbyMode();
+void LedMovementControl::setFocusMode(int position, bool lightUpRest) {
+    if (lightUpRest) {
+        setStandbyMode(30);
+        isStandbyLight = true;
+    } else {
+        ledControl.clearAll();
+        isStandbyLight = false;
+    }
+    
     ledControl.lightPosition(position, ledControl.getWhite(100)); // 100% brightness
 }
 
