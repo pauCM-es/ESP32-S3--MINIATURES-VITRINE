@@ -1,0 +1,9 @@
+# ESP32-S3 Smart Vitrine - custom partition table
+# Flash size: 16MB (0x1000000)
+# Name,   Type, SubType, Offset,   Size,     Flags
+nvs,      data, nvs,     0x9000,   0x5000,
+otadata,  data, ota,     0xE000,   0x2000,
+phy_init, data, phy,     0x10000,  0x1000,
+ota_0,    app,  ota_0,   0x20000,  0x330000,
+ota_1,    app,  ota_1,   0x350000, 0x330000,
+littlefs, data, spiffs,  0x680000, 0x980000,
