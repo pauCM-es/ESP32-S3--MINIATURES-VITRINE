@@ -1,99 +1,33 @@
 #include <Arduino.h>
-#include <ArduinoJson.h>
-#include <WiFi.h>
-#include <WebServer.h>
-#include <LittleFS.h>
 #include "config.h"
 #include "log.h"
-#include "version.h"
+#include "wifi_manager.h"
+#include "web_server_manager.h"
 #include "led_control.h"
-#include "tft_display_control.h" // Changed to TFT display
+#include "tft_display_control.h"
 #include "encoder_control.h"
 #include "nfc_reader_control.h"
 #include "led_movement_control.h"
 #include "mode_manager.h"
 
-// Create instances of our control classes
+// Network managers
+WifiManager wifiManager;
+WebServerManager webServer;
+
+// Hardware control instances
 LedControl ledControl;
-TFTDisplayControl displayControl; // Changed to TFTDisplayControl
+TFTDisplayControl displayControl;
 EncoderControl encoderControl;
 NFCReaderControl nfcReader;
 
-// Create an instance of LedMovementControl
+// Movement and mode control
 LedMovementControl ledMovementControl(ledControl);
-
-// Create an instance of ModeManager
 ModeManager modeManager(ledMovementControl, nfcReader, displayControl, encoderControl);
 
-// Current miniature index
+// State tracking
 int currentIndex = 0;
-
-// Add a flag to track NFC reader connection
 bool isNFCConnected = false;
-
-// Track last state of mode button for edge detection
 int lastModeBtnState = HIGH;
-
-static WebServer server(80);
-static bool fsMounted = false;
-
-#if __has_include("secrets.h")
-#include "secrets.h"
-#define HAS_WIFI_SECRETS 1
-#else
-#define HAS_WIFI_SECRETS 0
-#endif
-
-#ifndef AP_SSID
-#define AP_SSID "Vitrine-ESP32S3"
-#endif
-
-#ifndef AP_PASS
-#define AP_PASS "vitrine1234"
-#endif
-
-static const char *getContentType(const String &path) {
-  if (path.endsWith(".html")) return "text/html";
-  if (path.endsWith(".css")) return "text/css";
-  if (path.endsWith(".js")) return "application/javascript";
-  if (path.endsWith(".json")) return "application/json";
-  if (path.endsWith(".png")) return "image/png";
-  if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
-  if (path.endsWith(".svg")) return "image/svg+xml";
-  if (path.endsWith(".ico")) return "image/x-icon";
-  return "text/plain";
-}
-
-static bool streamFileFromLittleFS(const String &path) {
-  if (!fsMounted) {
-    return false;
-  }
-  if (!LittleFS.exists(path)) {
-    return false;
-  }
-  File file = LittleFS.open(path, "r");
-  if (!file) {
-    return false;
-  }
-  server.streamFile(file, getContentType(path));
-  file.close();
-  return true;
-}
-
-static bool isReservedNonSpaPath(const String &path) {
-  if (path == "/ws") return true;
-  if (path.startsWith("/api/")) return true;
-  if (path.startsWith("/update/")) return true;
-  return false;
-}
-
-static bool isStaticAssetPath(const String &path) {
-  // Treat common asset routes or any URL with a file extension as "static".
-  if (path.startsWith("/assets/")) return true;
-  const int lastSlash = path.lastIndexOf('/');
-  const int lastDot = path.lastIndexOf('.');
-  return lastDot > lastSlash;
-}
 
 void setup() {
   // Initialize serial communication + logging
@@ -103,118 +37,9 @@ void setup() {
   LOGI("boot", "SDK: %s", ESP.getSdkVersion());
   LOGI("boot", "CPU Freq: %u MHz", ESP.getCpuFreqMHz());
 
-  // Step 3: mount LittleFS
-  fsMounted = LittleFS.begin(true);
-  if (!fsMounted) {
-    LOGE("fs", "LittleFS mount failed");
-  } else {
-    LOGI("fs", "LittleFS mounted");
-  }
-
-  // Step 3: Wi-Fi + HTTP server
-  WiFi.mode(WIFI_MODE_APSTA);
-  if (HAS_WIFI_SECRETS) {
-    LOGI("wifi", "Connecting to SSID: %s", WIFI_SSID);
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
-    const uint32_t startMs = millis();
-    while (WiFi.status() != WL_CONNECTED && (millis() - startMs) < 15000) {
-      delay(250);
-    }
-    if (WiFi.status() == WL_CONNECTED) {
-      LOGI("wifi", "Connected, IP: %s", WiFi.localIP().toString().c_str());
-    } else {
-      LOGW("wifi", "STA connect timeout; falling back to AP only");
-    }
-  }
-
-  const char *apSsid = AP_SSID;
-  const char *apPass = AP_PASS; // WPA2 requires >=8 chars
-  if (WiFi.softAP(apSsid, apPass)) {
-    LOGI("wifi", "AP started: %s", apSsid);
-    LOGI("wifi", "AP password: (hidden)");
-    LOGI("wifi", "AP IP: %s", WiFi.softAPIP().toString().c_str());
-  } else {
-    LOGW("wifi", "Failed to start AP");
-  }
-
-  // Step 5: Minimal REST API
-  server.on("/api/info", HTTP_GET, []() {
-    StaticJsonDocument<384> doc;
-
-    doc["firmwareVersion"] = FIRMWARE_VERSION;
-    doc["webVersion"] = WEB_VERSION;
-
-    char buildDate[32];
-    snprintf(buildDate, sizeof(buildDate), "%s %s", __DATE__, __TIME__);
-    doc["buildDate"] = buildDate;
-
-    doc["uptime"] = static_cast<uint32_t>(millis() / 1000);
-
-    String ip;
-    if (WiFi.status() == WL_CONNECTED) {
-      ip = WiFi.localIP().toString();
-    } else {
-      ip = WiFi.softAPIP().toString();
-    }
-    doc["ip"] = ip;
-
-    if (fsMounted) {
-      const size_t total = LittleFS.totalBytes();
-      const size_t used = LittleFS.usedBytes();
-      doc["littlefsFree"] = (total >= used) ? (total - used) : 0;
-    } else {
-      doc["littlefsFree"] = 0;
-    }
-
-    String out;
-    serializeJson(doc, out);
-    server.send(200, "application/json", out);
-  });
-
-  server.on("/", HTTP_GET, []() {
-    if (fsMounted && streamFileFromLittleFS("/index.html")) {
-      return;
-    }
-    server.send(500, "text/plain", fsMounted ? "index.html missing in LittleFS" : "LittleFS not mounted");
-  });
-
-  server.on("/index.html", HTTP_GET, []() {
-    if (fsMounted && streamFileFromLittleFS("/index.html")) {
-      return;
-    }
-    server.send(404, "text/plain", fsMounted ? "Not found" : "LittleFS not mounted");
-  });
-
-  server.onNotFound([]() {
-    const String path = server.uri();
-
-    // Step 4: SPA fallback routing
-    // - Reserved paths (API/WS/OTA) never fall back
-    // - Existing static files are served normally
-    // - Non-static GET requests fall back to index.html
-    if (isReservedNonSpaPath(path)) {
-      server.send(404, "text/plain", "Not found");
-      return;
-    }
-
-    if (fsMounted && streamFileFromLittleFS(path)) {
-      return;
-    }
-
-    if (isStaticAssetPath(path)) {
-      server.send(404, "text/plain", "Not found");
-      return;
-    }
-
-    if (server.method() == HTTP_GET && fsMounted && streamFileFromLittleFS("/index.html")) {
-      return;
-    }
-
-    server.send(500, "text/plain", fsMounted ? "index.html missing in LittleFS" : "LittleFS not mounted");
-  });
-
-  server.begin();
-  LOGI("http", "HTTP server started on port 80");
+  // Initialize networking
+  wifiManager.begin();
+  webServer.begin();
 
   // Initialize LED strip
   ledControl.begin();
@@ -295,3 +120,5 @@ void loop() {
   delay(10);
 }
 
+// Handle network requests
+  webS
