@@ -79,6 +79,21 @@ static bool streamFileFromLittleFS(const String &path) {
   return true;
 }
 
+static bool isReservedNonSpaPath(const String &path) {
+  if (path == "/ws") return true;
+  if (path.startsWith("/api/")) return true;
+  if (path.startsWith("/update/")) return true;
+  return false;
+}
+
+static bool isStaticAssetPath(const String &path) {
+  // Treat common asset routes or any URL with a file extension as "static".
+  if (path.startsWith("/assets/")) return true;
+  const int lastSlash = path.lastIndexOf('/');
+  const int lastDot = path.lastIndexOf('.');
+  return lastDot > lastSlash;
+}
+
 void setup() {
   // Initialize serial communication + logging
   Log::begin(Serial0, 115200);
@@ -136,12 +151,31 @@ void setup() {
   });
 
   server.onNotFound([]() {
-    // Step 3: serve static files only for direct hits (no SPA fallback yet)
     const String path = server.uri();
+
+    // Step 4: SPA fallback routing
+    // - Reserved paths (API/WS/OTA) never fall back
+    // - Existing static files are served normally
+    // - Non-static GET requests fall back to index.html
+    if (isReservedNonSpaPath(path)) {
+      server.send(404, "text/plain", "Not found");
+      return;
+    }
+
     if (fsMounted && streamFileFromLittleFS(path)) {
       return;
     }
-    server.send(404, "text/plain", "Not found");
+
+    if (isStaticAssetPath(path)) {
+      server.send(404, "text/plain", "Not found");
+      return;
+    }
+
+    if (server.method() == HTTP_GET && fsMounted && streamFileFromLittleFS("/index.html")) {
+      return;
+    }
+
+    server.send(500, "text/plain", fsMounted ? "index.html missing in LittleFS" : "LittleFS not mounted");
   });
 
   server.begin();
