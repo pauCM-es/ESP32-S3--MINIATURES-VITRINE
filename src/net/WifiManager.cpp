@@ -1,5 +1,5 @@
-#include "wifi_manager.h"
-#include "log.h"
+#include "WifiManager.h"
+#include "../util/Log.h"
 
 #if __has_include("secrets.h")
 #include "secrets.h"

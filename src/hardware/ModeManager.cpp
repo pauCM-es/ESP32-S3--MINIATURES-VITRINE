@@ -1,7 +1,8 @@
-#include "mode_manager.h"
-#include "led_movement_control.h"
-#include "nfc_reader_control.h"
-#include "tft_display_control.h"
+#include "ModeManager.h"
+#include "LedMovementControl.h"
+#include "NfcControl.h"
+#include "DisplayControl.h"
+#include "EncoderControl.h"
 
 ModeManager::ModeManager(LedMovementControl& ledMovementControl, NFCReaderControl& nfcReader, TFTDisplayControl& displayControl, EncoderControl& encoderControl)
     : ledMovementControl(ledMovementControl), nfcReader(nfcReader), displayControl(displayControl), encoderControl(encoderControl) {}

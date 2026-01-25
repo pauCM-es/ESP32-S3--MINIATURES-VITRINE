@@ -1,4 +1,4 @@
-#include "tft_display_control.h"
+#include "DisplayControl.h"
 
 // Constructor
 TFTDisplayControl::TFTDisplayControl() {

@@ -1,18 +1,18 @@
 #include <Arduino.h>
 #include "config.h"
-#include "log.h"
-#include "wifi_manager.h"
-#include "web_server_manager.h"
-#include "led_control.h"
-#include "tft_display_control.h"
-#include "encoder_control.h"
-#include "nfc_reader_control.h"
-#include "led_movement_control.h"
-#include "mode_manager.h"
+#include "util/Log.h"
+#include "net/WifiManager.h"
+#include "net/WebServer.h"
+#include "hardware/LedControl.h"
+#include "hardware/DisplayControl.h"
+#include "hardware/EncoderControl.h"
+#include "hardware/NfcControl.h"
+#include "hardware/LedMovementControl.h"
+#include "hardware/ModeManager.h"
 
 // Network managers
 WifiManager wifiManager;
-WebServerManager webServer;
+WebServer webServer;
 
 // Hardware control instances
 LedControl ledControl;
@@ -76,9 +76,8 @@ void setup() {
 }
 
 void loop() {
-  // Handle network requests
-  webServer.handleClient();
-
+  // Network is handled asynchronously by ESPAsyncWebServer
+  
   int modeBtnState = digitalRead(BTN_MODE);
   // Detect button press (active LOW due to INPUT_PULLUP)
   if (modeBtnState != lastModeBtnState) {

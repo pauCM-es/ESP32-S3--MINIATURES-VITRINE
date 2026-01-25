@@ -1,13 +1,12 @@
-#include "web_server_manager.h"
-#include "log.h"
+#include "WebServer.h"
+#include "../util/Log.h"
 #include "version.h"
 #include <ArduinoJson.h>
 #include <WiFi.h>
-#include <functional>
 
-WebServerManager::WebServerManager() : server(80), fsMounted(false) {}
+WebServer::WebServer() : server(80), fsMounted(false) {}
 
-void WebServerManager::begin() {
+void WebServer::begin() {
     // Mount LittleFS
     fsMounted = LittleFS.begin(true);
     if (!fsMounted) {
@@ -16,28 +15,27 @@ void WebServerManager::begin() {
         LOGI("fs", "LittleFS mounted");
     }
     
+    // Initialize WebSocket server
+    wsServer.begin(&server);
+    
     setupRoutes();
     server.begin();
     LOGI("http", "HTTP server started on port 80");
 }
 
-void WebServerManager::handleClient() {
-    server.handleClient();
-}
-
-void WebServerManager::setupRoutes() {
+void WebServer::setupRoutes() {
     // API endpoints
-    server.on("/api/info", HTTP_GET, std::bind(&WebServerManager::handleApiInfo, this));
+    server.on("/api/info", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        handleApiInfo(request);
+    });
     
-    // Static routes
-    server.on("/", HTTP_GET, std::bind(&WebServerManager::handleRoot, this));
-    server.on("/index.html", HTTP_GET, std::bind(&WebServerManager::handleIndexHtml, this));
-    
-    // SPA fallback
-    server.onNotFound(std::bind(&WebServerManager::handleNotFound, this));
+    // Static file handler (SPA fallback included)
+    server.onNotFound([this](AsyncWebServerRequest *request) {
+        handleNotFound(request);
+    });
 }
 
-void WebServerManager::handleApiInfo() {
+void WebServer::handleApiInfo(AsyncWebServerRequest *request) {
     JsonDocument doc;
 
     doc["firmwareVersion"] = FIRMWARE_VERSION;
@@ -67,68 +65,44 @@ void WebServerManager::handleApiInfo() {
 
     String out;
     serializeJson(doc, out);
-    server.send(200, "application/json", out);
+    
+    AsyncWebServerResponse *response = request->beginResponse(200, "application/json", out);
+    request->send(response);
 }
-
-void WebServerManager::handleRoot() {
-    if (fsMounted && streamFileFromLittleFS("/index.html")) {
-        return;
-    }
-    server.send(500, "text/plain", fsMounted ? "index.html missing in LittleFS" : "LittleFS not mounted");
-}
-
-void WebServerManager::handleIndexHtml() {
-    if (fsMounted && streamFileFromLittleFS("/index.html")) {
-        return;
-    }
-    server.send(404, "text/plain", fsMounted ? "Not found" : "LittleFS not mounted");
-}
-
-void WebServerManager::handleNotFound() {
-    const String path = server.uri();
+void WebServer::handleNotFound(AsyncWebServerRequest *request) {
+    const String path = request->url();
 
     // Step 4: SPA fallback routing
     // - Reserved paths (API/WS/OTA) never fall back
     // - Existing static files are served normally
     // - Non-static GET requests fall back to index.html
     if (isReservedNonSpaPath(path)) {
-        server.send(404, "text/plain", "Not found");
+        request->send(404, "text/plain", "Not found");
         return;
     }
 
-    if (fsMounted && streamFileFromLittleFS(path)) {
+    // Try to serve the requested file
+    if (fsMounted && LittleFS.exists(path)) {
+        request->send(LittleFS, path, getContentType(path));
         return;
     }
 
+    // If it looks like a static asset, return 404
     if (isStaticAssetPath(path)) {
-        server.send(404, "text/plain", "Not found");
+        request->send(404, "text/plain", "Not found");
         return;
     }
 
-    if (server.method() == HTTP_GET && fsMounted && streamFileFromLittleFS("/index.html")) {
+    // SPA fallback: serve index.html for non-static GET requests
+    if (request->method() == HTTP_GET && fsMounted && LittleFS.exists("/index.html")) {
+        request->send(LittleFS, "/index.html", "text/html");
         return;
     }
 
-    server.send(500, "text/plain", fsMounted ? "index.html missing in LittleFS" : "LittleFS not mounted");
+    request->send(500, "text/plain", fsMounted ? "index.html missing in LittleFS" : "LittleFS not mounted");
 }
 
-bool WebServerManager::streamFileFromLittleFS(const String &path) {
-    if (!fsMounted) {
-        return false;
-    }
-    if (!LittleFS.exists(path)) {
-        return false;
-    }
-    File file = LittleFS.open(path, "r");
-    if (!file) {
-        return false;
-    }
-    server.streamFile(file, getContentType(path));
-    file.close();
-    return true;
-}
-
-const char* WebServerManager::getContentType(const String &path) {
+const char* WebServer::getContentType(const String &path) {
     if (path.endsWith(".html")) return "text/html";
     if (path.endsWith(".css")) return "text/css";
     if (path.endsWith(".js")) return "application/javascript";
@@ -140,14 +114,14 @@ const char* WebServerManager::getContentType(const String &path) {
     return "text/plain";
 }
 
-bool WebServerManager::isReservedNonSpaPath(const String &path) {
+bool WebServer::isReservedNonSpaPath(const String &path) {
     if (path == "/ws") return true;
     if (path.startsWith("/api/")) return true;
     if (path.startsWith("/update/")) return true;
     return false;
 }
 
-bool WebServerManager::isStaticAssetPath(const String &path) {
+bool WebServer::isStaticAssetPath(const String &path) {
     // Treat common asset routes or any URL with a file extension as "static".
     if (path.startsWith("/assets/")) return true;
     const int lastSlash = path.lastIndexOf('/');

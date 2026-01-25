@@ -1,4 +1,4 @@
-#include "encoder_control.h"
+#include "EncoderControl.h"
 
 // Constructor
 EncoderControl::EncoderControl() {

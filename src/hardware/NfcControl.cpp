@@ -1,4 +1,4 @@
-#include "nfc_reader_control.h"
+#include "NfcControl.h"
 #include "config.h"
 #include <Wire.h>
 #include <ArduinoJson.h> // Include the ArduinoJson library

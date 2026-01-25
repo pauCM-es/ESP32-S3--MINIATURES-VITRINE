@@ -1,10 +1,10 @@
 #ifndef MODE_MANAGER_H
 #define MODE_MANAGER_H
 
-#include "led_movement_control.h"
-#include "nfc_reader_control.h"
-#include "tft_display_control.h"
-#include "encoder_control.h"
+#include "LedMovementControl.h"
+#include "NfcControl.h"
+#include "DisplayControl.h"
+#include "EncoderControl.h"
 
 struct Mode {
     const char* name; // Mode name

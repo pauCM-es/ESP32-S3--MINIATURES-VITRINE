@@ -1,7 +1,7 @@
 #ifndef LED_MOVEMENT_CONTROL_H
 #define LED_MOVEMENT_CONTROL_H
 
-#include "led_control.h"
+#include "LedControl.h"
 
 class LedMovementControl {
 public:

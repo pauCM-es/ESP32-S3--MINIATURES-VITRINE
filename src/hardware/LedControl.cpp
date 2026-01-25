@@ -1,5 +1,5 @@
-#include "led_control.h"
-#include "color_utils.h" // Include the new color_utils header
+#include "LedControl.h"
+#include "ColorUtils.h" // Include the new color_utils header
 
 // Constructor
 LedControl::LedControl() {

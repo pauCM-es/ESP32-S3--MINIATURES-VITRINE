@@ -1,5 +1,5 @@
-#include "led_movement_control.h"
-#include "led_control.h"
+#include "LedMovementControl.h"
+#include "LedControl.h"
 
 // Constructor
 LedMovementControl::LedMovementControl(LedControl& ledControl) : ledControl(ledControl) {}

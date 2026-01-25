@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <ESP32Encoder.h>
 #include "config.h"
-#include "led_control.h"
+#include "LedControl.h"
 
 class EncoderControl {
 private:
