@@ -5,6 +5,7 @@
 #include <LittleFS.h>
 #include "config.h"
 #include "log.h"
+#include "version.h"
 #include "led_control.h"
 #include "tft_display_control.h" // Changed to TFT display
 #include "encoder_control.h"
@@ -135,6 +136,40 @@ void setup() {
   } else {
     LOGW("wifi", "Failed to start AP");
   }
+
+  // Step 5: Minimal REST API
+  server.on("/api/info", HTTP_GET, []() {
+    StaticJsonDocument<384> doc;
+
+    doc["firmwareVersion"] = FIRMWARE_VERSION;
+    doc["webVersion"] = WEB_VERSION;
+
+    char buildDate[32];
+    snprintf(buildDate, sizeof(buildDate), "%s %s", __DATE__, __TIME__);
+    doc["buildDate"] = buildDate;
+
+    doc["uptime"] = static_cast<uint32_t>(millis() / 1000);
+
+    String ip;
+    if (WiFi.status() == WL_CONNECTED) {
+      ip = WiFi.localIP().toString();
+    } else {
+      ip = WiFi.softAPIP().toString();
+    }
+    doc["ip"] = ip;
+
+    if (fsMounted) {
+      const size_t total = LittleFS.totalBytes();
+      const size_t used = LittleFS.usedBytes();
+      doc["littlefsFree"] = (total >= used) ? (total - used) : 0;
+    } else {
+      doc["littlefsFree"] = 0;
+    }
+
+    String out;
+    serializeJson(doc, out);
+    server.send(200, "application/json", out);
+  });
 
   server.on("/", HTTP_GET, []() {
     if (fsMounted && streamFileFromLittleFS("/index.html")) {
