@@ -3,6 +3,7 @@
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 #include "WsServer.h"
+#include "OtaFirmware.h"
 
 class WebServer {
 public:
@@ -16,6 +17,7 @@ public:
 private:
     AsyncWebServer server;
     WsServer wsServer;
+    OtaFirmware otaFirmware;
     bool fsMounted;
     
     void setupRoutes();

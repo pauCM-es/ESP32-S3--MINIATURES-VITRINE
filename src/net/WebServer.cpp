@@ -29,6 +29,9 @@ void WebServer::setupRoutes() {
     server.on("/api/info", HTTP_GET, [this](AsyncWebServerRequest *request) {
         handleApiInfo(request);
     });
+
+    // Step 8: OTA firmware update
+    otaFirmware.attach(server, wsServer);
     
     // Static file handler (SPA fallback included)
     server.onNotFound([this](AsyncWebServerRequest *request) {
