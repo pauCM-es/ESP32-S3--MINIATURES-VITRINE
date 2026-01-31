@@ -2,6 +2,7 @@ import "./App.css";
 import { Link, Route, Routes } from "react-router-dom";
 import StatusPage from "./pages/StatusPage";
 import UpdatesPage from "./pages/UpdatesPage";
+import LedsPage from "./pages/LedsPage";
 
 function App() {
 	return (
@@ -10,6 +11,7 @@ function App() {
 				<div className="brand">ESP32-S3 Smart Vitrine</div>
 				<nav className="nav">
 					<Link to="/">Status</Link>
+					<Link to="/leds">LEDs</Link>
 					<Link to="/updates">Updates</Link>
 				</nav>
 			</header>
@@ -19,6 +21,10 @@ function App() {
 					<Route
 						path="/"
 						element={<StatusPage />}
+					/>
+					<Route
+						path="/leds"
+						element={<LedsPage />}
 					/>
 					<Route
 						path="/updates"

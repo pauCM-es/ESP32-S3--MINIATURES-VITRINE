@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
+		"dev:proxy": "cross-env VITE_PROXY_TARGET=http://192.168.4.1:80 vite",
 		"build": "tsc -b && vite build",
 		"build:esp": "vite build && node scripts/copy-to-data.mjs",
 		"lint": "eslint .",
@@ -21,6 +22,7 @@
 		"@types/react": "^19.2.5",
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^5.1.1",
+		"cross-env": "^7.0.3",
 		"eslint": "^9.39.1",
 		"eslint-plugin-react-hooks": "^7.0.1",
 		"eslint-plugin-react-refresh": "^0.4.24",
