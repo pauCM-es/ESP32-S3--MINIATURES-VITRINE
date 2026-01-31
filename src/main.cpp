@@ -10,6 +10,7 @@
 #include "hardware/NfcControl.h"
 #include "hardware/LedMovementControl.h"
 #include "hardware/ModeManager.h"
+#include "net/WsEventHandlers.h"
 
 // Network managers
 WifiManager wifiManager;
@@ -47,6 +48,7 @@ void setup() {
   // Initialize networking
   wifiManager.begin();
   webServer.begin();
+  attachWsEventHandlers(*webServer.getWsServer(), ledControl, ledMovementControl);
 
   // Initialize LED strip
   ledControl.begin();

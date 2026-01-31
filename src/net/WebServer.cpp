@@ -30,6 +30,11 @@ void WebServer::setupRoutes() {
         handleApiInfo(request);
     });
 
+    // Debug: list LittleFS contents
+    server.on("/api/fs", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        handleApiFs(request);
+    });
+
     // Step 8: OTA firmware update
     otaFirmware.attach(server, wsServer);
 
@@ -42,6 +47,10 @@ void WebServer::setupRoutes() {
     request->send(404, "text/plain", "Update page missing in LittleFS (/update/index.html)");
     });
     server.serveStatic("/update/", LittleFS, "/update/").setDefaultFile("index.html");
+
+    // Serve the main SPA from LittleFS at the root.
+    // If the requested file doesn't exist, it'll fall through to onNotFound() for SPA fallback routing.
+    server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
     
     // Static file handler (SPA fallback included)
     server.onNotFound([this](AsyncWebServerRequest *request) {
@@ -84,6 +93,33 @@ void WebServer::handleApiInfo(AsyncWebServerRequest *request) {
     
     AsyncWebServerResponse *response = request->beginResponse(200, "application/json", out);
     request->send(response);
+}
+
+void WebServer::handleApiFs(AsyncWebServerRequest *request) {
+    JsonDocument doc;
+
+    doc["mounted"] = fsMounted;
+
+    JsonArray files = doc["files"].to<JsonArray>();
+
+    if (fsMounted) {
+        File root = LittleFS.open("/");
+        if (!root) {
+            doc["error"] = "Failed to open LittleFS root";
+        } else {
+            File file = root.openNextFile();
+            while (file) {
+                JsonObject f = files.add<JsonObject>();
+                f["name"] = file.name();
+                f["size"] = static_cast<uint32_t>(file.size());
+                file = root.openNextFile();
+            }
+        }
+    }
+
+    String out;
+    serializeJson(doc, out);
+    request->send(200, "application/json", out);
 }
 void WebServer::handleNotFound(AsyncWebServerRequest *request) {
     const String path = request->url();

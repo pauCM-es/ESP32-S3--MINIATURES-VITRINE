@@ -22,6 +22,7 @@ private:
     
     void setupRoutes();
     void handleApiInfo(AsyncWebServerRequest *request);
+    void handleApiFs(AsyncWebServerRequest *request);
     void handleStaticFile(AsyncWebServerRequest *request);
     void handleNotFound(AsyncWebServerRequest *request);
     

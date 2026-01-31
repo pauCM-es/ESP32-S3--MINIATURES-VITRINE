@@ -5,6 +5,11 @@
 
 WsServer::WsServer() : ws("/ws") {}
 
+void WsServer::setTextMessageHandler(void* ctx, TextMessageHandler handler) {
+    msgCtx = ctx;
+    msgHandler = handler;
+}
+
 void WsServer::begin(AsyncWebServer *server) {
     ws.onEvent([this](AsyncWebSocket *server, AsyncWebSocketClient *client, 
                       AwsEventType type, void *arg, uint8_t *data, size_t len) {
@@ -62,12 +67,25 @@ void WsServer::handleDisconnect(AsyncWebSocketClient *client) {
 }
 
 void WsServer::handleTextMessage(AsyncWebSocketClient *client, uint8_t *data, size_t len) {
-    data[len] = 0; // Null terminate
-    LOGD("ws", "Received from #%u: %s", client->id(), (char*)data);
+    // Copy into a bounded, null-terminated buffer (the WS data buffer is not guaranteed to have space for '\0').
+    if (len == 0) {
+        return;
+    }
+
+    if (len > 1024) {
+        LOGW("ws", "Dropping oversized message from #%u (%u bytes)", client->id(), static_cast<unsigned>(len));
+        return;
+    }
+
+    char buf[1025];
+    memcpy(buf, data, len);
+    buf[len] = '\0';
+
+    LOGD("ws", "Received from #%u: %s", client->id(), buf);
     
     // Parse incoming message
     JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, (char*)data);
+    DeserializationError error = deserializeJson(doc, buf);
     
     if (error) {
         LOGW("ws", "JSON parse error: %s", error.c_str());
@@ -85,6 +103,12 @@ void WsServer::handleTextMessage(AsyncWebSocketClient *client, uint8_t *data, si
         String output;
         serializeJson(response, output);
         client->text(output);
+        return;
+    }
+
+    // Delegate other messages to the application
+    if (msgHandler) {
+        msgHandler(msgCtx, client, buf, len);
     }
 }
 
