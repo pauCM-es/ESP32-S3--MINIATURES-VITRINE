@@ -1,13 +1,28 @@
 #include "EncoderControl.h"
 
+static int wrapIndex(int idx, int max) {
+    if (max <= 0) return 0;
+    while (idx < 0) idx += max;
+    while (idx >= max) idx -= max;
+    return idx;
+}
+
 // Constructor
 EncoderControl::EncoderControl() {
     encoder = new ESP32Encoder();
     lastPosition = 0;
     currentIndex = 0;
     buttonState = false;
-    lastButtonState = false;
+    lastButtonReading = false;
     lastDebounceTime = 0;
+
+    pressStartTime = 0;
+    lastPressDuration = 0;
+    longPressArmed = false;
+
+    pendingPressEvent = false;
+    pendingShortPressEvent = false;
+    pendingLongPressEvent = false;
 }
 
 // Initialize encoder
@@ -30,93 +45,43 @@ int EncoderControl::getCurrentIndex() {
 
 // Check if encoder has moved and update index if needed
 bool EncoderControl::checkMovement() {
-    long newPosition = encoder->getCount() / 2;  // Divide by 2 for half-step encoding
-    
-    // Check if the encoder has moved
-    if (newPosition != lastPosition) {
-        // Calculate direction and change in index
-        int direction = (newPosition > lastPosition) ? 1 : -1;
-        currentIndex += direction;
-        
-        // Ensure index stays within bounds
-        if (currentIndex < 0) {
-            currentIndex = MAX_MINIATURES - 1;
-        } else if (currentIndex >= MAX_MINIATURES) {
-            currentIndex = 0;
-        }
-        lastPosition = newPosition;
-        return true;  // Position has changed
+    const long newPosition = encoder->getCount() / 2;  // Divide by 2 for half-step encoding
+    if (newPosition == lastPosition) {
+        return false;
     }
-    
-    return false;  // No change
+
+    long delta = newPosition - lastPosition;
+    // Clamp excessively large jumps (e.g., due to missed interrupts) to something sane.
+    if (delta > 4) delta = 4;
+    if (delta < -4) delta = -4;
+
+    currentIndex = wrapIndex(currentIndex + static_cast<int>(delta), MAX_MINIATURES);
+    lastPosition = newPosition;
+    return true;
 }
 
 // Check if the button has been pressed with debounce
 bool EncoderControl::isButtonPressed() {
-    // Read the current state of the button (inverted because of pull-up)
-    bool reading = !digitalRead(ENCODER_BUTTON);
-    bool result = false;
-    
-    // Check if the button state has changed
-    if (reading != lastButtonState) {
-        lastDebounceTime = millis();
-    }
-    
-    // If the button state has been stable for longer than the debounce delay
-    if ((millis() - lastDebounceTime) > debounceDelay) {
-        // If the button state has changed since the last reading
-        if (reading != buttonState) {
-            buttonState = reading;
-            
-            // Only consider the button press (not release)
-            if (buttonState) {
-                result = true;
-            }
-        }
-    }
-    
-    lastButtonState = reading;
-    return result;
+    updateButton();
+    const bool wasPressed = pendingPressEvent;
+    pendingPressEvent = false;
+    return wasPressed;
 }
-
-// Add variables to track brightness adjustment
-bool isIncreasing = true; // Last mode used: true for increase, false for decrease
-unsigned long buttonPressStartTime = 0;
-const unsigned long longPressDuration = 1000; // 1 second for long press
-
-// Add variables to track button press duration
-unsigned long pressStartTime = 0;
-const unsigned long shortPressThreshold = 500; // 500ms for short press
 
 // Check if the button is pressed (short press)
 bool EncoderControl::isShortPress() {
-    if (isButtonPressed()) {
-        if (pressStartTime == 0) {
-            pressStartTime = millis();
-        }
-    } else {
-        if (pressStartTime > 0 && (millis() - pressStartTime < shortPressThreshold)) {
-            pressStartTime = 0; // Reset press start time
-            return true; // Short press detected
-        }
-        pressStartTime = 0; // Reset press start time
-    }
-    return false;
+    updateButton();
+    const bool wasShort = pendingShortPressEvent;
+    pendingShortPressEvent = false;
+    return wasShort;
 }
 
 // Check if the button is pressed (long press)
 bool EncoderControl::isLongPress() {
-    if (isButtonPressed()) {
-        if (pressStartTime == 0) {
-            pressStartTime = millis();
-        }
-        if (millis() - pressStartTime >= shortPressThreshold) {
-            return true; // Long press detected
-        }
-    } else {
-        pressStartTime = 0; // Reset press start time
-    }
-    return false;
+    updateButton();
+    const bool wasLong = pendingLongPressEvent;
+    pendingLongPressEvent = false;
+    return wasLong;
 }
 
 // Method to adjust brightness
@@ -124,6 +89,8 @@ void EncoderControl::adjustBrightness(LedControl& ledControl) {
     static uint8_t brightness = 128; // Start with medium brightness (0-255)
     static unsigned long lastBrightnessUpdate = 0; // Track the last update time
     const unsigned long brightnessUpdateInterval = 50; // Minimum interval in milliseconds
+
+    static bool isIncreasing = true; // true for increase, false for decrease
 
     if (isLongPress()) {
         // Adjust brightness only if the update interval has passed
@@ -139,6 +106,54 @@ void EncoderControl::adjustBrightness(LedControl& ledControl) {
 
             // Update the last brightness update time
             lastBrightnessUpdate = millis();
+        }
+    }
+}
+
+void EncoderControl::updateButton() {
+    // Raw reading: true when pressed (INPUT_PULLUP -> LOW when pressed)
+    const bool reading = (digitalRead(ENCODER_BUTTON) == LOW);
+
+    if (reading != lastButtonReading) {
+        lastDebounceTime = millis();
+        lastButtonReading = reading;
+    }
+
+    if ((millis() - lastDebounceTime) <= debounceDelay) {
+        return;
+    }
+
+    // Debounced transition
+    if (reading != buttonState) {
+        buttonState = reading;
+        if (buttonState) {
+            // Press
+            pressStartTime = millis();
+            longPressArmed = true;
+            pendingPressEvent = true;
+        } else {
+            // Release
+            if (pressStartTime != 0) {
+                lastPressDuration = millis() - pressStartTime;
+            } else {
+                lastPressDuration = 0;
+            }
+
+            if (lastPressDuration < longPressThresholdMs) {
+                pendingShortPressEvent = true;
+            }
+
+            pressStartTime = 0;
+            longPressArmed = false;
+        }
+    }
+
+    // Long-press fires once per press
+    if (buttonState && longPressArmed && pressStartTime != 0) {
+        const unsigned long heldMs = millis() - pressStartTime;
+        if (heldMs >= longPressThresholdMs) {
+            pendingLongPressEvent = true;
+            longPressArmed = false;
         }
     }
 }

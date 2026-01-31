@@ -9,12 +9,21 @@
 class EncoderControl {
 private:
     ESP32Encoder* encoder;
-    int lastPosition;
+    long lastPosition;
     int currentIndex;
-    bool buttonState;
-    bool lastButtonState;
+    bool buttonState;       // debounced state (true = pressed)
+    bool lastButtonReading; // raw reading (true = pressed)
     unsigned long lastDebounceTime;
+    unsigned long pressStartTime;
+    unsigned long lastPressDuration;
+    bool longPressArmed;
+    bool pendingPressEvent;
+    bool pendingShortPressEvent;
+    bool pendingLongPressEvent;
     static const unsigned long debounceDelay = 50;
+    static const unsigned long longPressThresholdMs = 700;
+
+    void updateButton();
     
 public:
     // Constructor

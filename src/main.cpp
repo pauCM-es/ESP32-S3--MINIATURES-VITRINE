@@ -121,6 +121,11 @@ void loop() {
     // Update display with new miniature info
     displayControl.showMiniatureInfo(currentIndex);
 
+    if (webServer.getWsServer()) {
+      broadcastEncoderRotate(*webServer.getWsServer(), currentIndex);
+      broadcastDisplayMiniature(*webServer.getWsServer(), currentIndex);
+    }
+
     // Highlight the corresponding LED position
     ledMovementControl.setFocusMode(currentIndex,ledMovementControl.getIsStandbyLight() );
 
@@ -128,6 +133,10 @@ void loop() {
   }
    if (encoderControl.isButtonPressed()) {
     LOGI("encoder", "Button press detected! Selecting LED.");
+
+    if (webServer.getWsServer()) {
+      broadcastEncoderPress(*webServer.getWsServer(), currentIndex);
+    }
 
     // Set selected mode
     ledMovementControl.setSelectedMode(currentIndex);

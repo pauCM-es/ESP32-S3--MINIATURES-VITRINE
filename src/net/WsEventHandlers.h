@@ -6,3 +6,8 @@
 
 // Attaches application-specific WS handlers (e.g., LED control) to the websocket server.
 void attachWsEventHandlers(WsServer& wsServer, LedControl& ledControl, LedMovementControl& ledMovementControl);
+
+// Broadcasts encoder/display events over WebSocket.
+void broadcastEncoderRotate(WsServer& wsServer, int index);
+void broadcastEncoderPress(WsServer& wsServer, int index);
+void broadcastDisplayMiniature(WsServer& wsServer, int index);

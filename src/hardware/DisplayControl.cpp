@@ -99,6 +99,11 @@ void TFTDisplayControl::showMiniatureInfo(int index) {
     
     clear();
 
+    // Position indicator (encoder-driven state)
+    char pos[32];
+    snprintf(pos, sizeof(pos), "Pos %d/%d", index + 1, MAX_MINIATURES);
+    showMessage(pos, 10, 5, 2, WHITE);
+
     // Fallback to "empty" if the demo entry is not initialized
     const char* name = DEMO_MINIATURES[index].name ? DEMO_MINIATURES[index].name : "empty";
     const char* author = DEMO_MINIATURES[index].author ? DEMO_MINIATURES[index].author : "empty";

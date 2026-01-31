@@ -108,3 +108,40 @@ void attachWsEventHandlers(WsServer& wsServer, LedControl& ledControl, LedMoveme
 
     wsServer.setTextMessageHandler(&g_ctx, handleWsTextMessage);
 }
+
+static void wsBroadcastJson(WsServer& wsServer, const JsonDocument& doc) {
+    if (!wsServer.hasClients()) {
+        return;
+    }
+
+    String out;
+    serializeJson(doc, out);
+    wsServer.broadcastMessage(out.c_str());
+}
+
+void broadcastEncoderRotate(WsServer& wsServer, int index) {
+    JsonDocument doc;
+    doc["type"] = "encoder";
+    doc["event"] = "rotate";
+    doc["index"] = index;
+    doc["timestamp"] = millis();
+    wsBroadcastJson(wsServer, doc);
+}
+
+void broadcastEncoderPress(WsServer& wsServer, int index) {
+    JsonDocument doc;
+    doc["type"] = "encoder";
+    doc["event"] = "press";
+    doc["index"] = index;
+    doc["timestamp"] = millis();
+    wsBroadcastJson(wsServer, doc);
+}
+
+void broadcastDisplayMiniature(WsServer& wsServer, int index) {
+    JsonDocument doc;
+    doc["type"] = "display";
+    doc["event"] = "miniature";
+    doc["index"] = index;
+    doc["timestamp"] = millis();
+    wsBroadcastJson(wsServer, doc);
+}
