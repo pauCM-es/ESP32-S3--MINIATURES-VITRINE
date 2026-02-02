@@ -7,6 +7,7 @@ The order is intentional: each step unlocks the next one while keeping the syste
 ---
 
 ## 1. PlatformIO Project Base
+
 - Create a new PlatformIO project for **ESP32-S3**
 - Select the Arduino framework
 - Verify upload and serial logging works
@@ -15,6 +16,7 @@ The order is intentional: each step unlocks the next one while keeping the syste
 ---
 
 ## 2. Partition Table
+
 - Create a custom `partitions.csv` including:
   - `ota_0`
   - `ota_1`
@@ -26,6 +28,7 @@ This step is mandatory before implementing OTA.
 ---
 
 ## 3. LittleFS Mount + Static Web Test
+
 - Initialize and mount LittleFS at boot
 - Add a simple `index.html` to LittleFS
 - Serve it via HTTP
@@ -34,6 +37,7 @@ This step is mandatory before implementing OTA.
 ---
 
 ## 4. SPA Fallback Routing
+
 - Implement SPA routing rules:
   - Any non-API, non-static route returns `index.html`
 - Ensure this works for paths like `/settings`, `/updates`, etc.
@@ -43,10 +47,13 @@ This is required for React Router.
 ---
 
 ## 5. Minimal REST API
+
 - Implement:
+
   ```
   GET /api/info
   ```
+
 - Return at least:
   - firmwareVersion
   - buildDate
@@ -59,10 +66,13 @@ This becomes the base communication contract with the web app.
 ---
 
 ## 6. WebSocket Base
+
 - Implement WebSocket endpoint:
+
   ```
   /ws
   ```
+
 - Allow connect / disconnect
 - Add a basic message (ping/hello)
 - Keep it non-blocking
@@ -70,6 +80,7 @@ This becomes the base communication contract with the web app.
 ---
 
 ## 7. Maintenance Mode
+
 - Implement a global Maintenance Mode flag
 - Optional: activate maintenance mode if a physical button is held at boot
 - Rules when maintenance mode is ON:
@@ -81,10 +92,13 @@ This is required for safe OTA.
 ---
 
 ## 8. OTA Firmware Update
+
 - Implement endpoint:
+
   ```
   POST /update/firmware
   ```
+
 - Stream firmware binary using the Update API
 - Do NOT buffer the full file in memory
 - Flow:
@@ -99,6 +113,7 @@ Test multiple consecutive OTA updates to validate reliability.
 ---
 
 ## 9. React + Vite Web App (Production Build)
+
 - Create the React app (Vite)
 - Add screens:
   - Device Status
@@ -109,11 +124,14 @@ Test multiple consecutive OTA updates to validate reliability.
 
 ---
 
-## 10. OTA Web App (LittleFS)
+## 10. OTA Web App (LittleFS)  (skipped)
+
 - Implement endpoint:
+
   ```
   POST /update/web
   ```
+
 - Recommended MVP approach:
   - Upload a **LittleFS image**
 - Flow:
@@ -128,6 +146,7 @@ Avoid zip extraction in the first iteration.
 ---
 
 ## 11. LED Hardware Integration
+
 - Implement `LedController`
 - Expose controls via WebSocket / API:
   - On / Off
@@ -138,6 +157,7 @@ Avoid zip extraction in the first iteration.
 ---
 
 ## 12. NFC, Encoder, and Display
+
 - Implement hardware modules:
   - NFC reader
   - Rotary encoder
@@ -147,7 +167,8 @@ Avoid zip extraction in the first iteration.
 
 ---
 
-## 13. SD Card Integration
+## 13. SD Card Integration (skipped)
+
 - Mount SD card
 - Read / write miniature metadata and positions
 - Ensure SD access is non-blocking
@@ -156,6 +177,7 @@ Avoid zip extraction in the first iteration.
 ---
 
 ## 14. Hardening & Cleanup
+
 - Improve error handling
 - Add timeouts and sanity checks
 - Reduce logging noise
@@ -164,7 +186,9 @@ Avoid zip extraction in the first iteration.
 ---
 
 ## Guiding Principle
+
 At every step:
+
 - Keep the device usable
 - Prefer robustness over features
 - Never break OTA once it works
