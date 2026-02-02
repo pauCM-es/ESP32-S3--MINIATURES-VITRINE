@@ -77,6 +77,7 @@ void setup() {
   
   // Set initial position
   currentIndex = 0;
+  encoderControl.setCurrentIndex(currentIndex);
   displayControl.showMiniatureInfo(currentIndex);
   ledMovementControl.setFocusMode(currentIndex);
 

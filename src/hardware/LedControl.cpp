@@ -3,7 +3,8 @@
 
 // Constructor
 LedControl::LedControl() {
-    strip = new Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_RGBW + NEO_KHZ800);
+    // RGBW strips are commonly SK6812 with GRBW byte order
+    strip = new Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRBW + NEO_KHZ800);
 }
 
 // Initialize LED strip
