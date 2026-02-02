@@ -3,6 +3,7 @@
 #include "NfcControl.h"
 #include "DisplayControl.h"
 #include "EncoderControl.h"
+#include "modes/ModesRegistry.h"
 
 ModeManager::ModeManager(LedMovementControl& ledMovementControl, NFCReaderControl& nfcReader, TFTDisplayControl& displayControl, EncoderControl& encoderControl)
     : ledMovementControl(ledMovementControl), nfcReader(nfcReader), displayControl(displayControl), encoderControl(encoderControl) {}
@@ -49,13 +50,36 @@ void ModeManager::setStandbyBrightness(uint8_t brightness) {
    displayControl.showMode("Settings", "Reading tag...");
 }
 
+void ModeManager::showStatus(const char* title, const char* message) {
+    displayControl.showMode(title, message);
+}
+
+int ModeManager::getNumModes() const {
+    return Modes::getNumModes();
+}
+
+const char* ModeManager::getModeName(int modeIndex) const {
+    return Modes::getMode(modeIndex).name;
+}
+
 void ModeManager::selectMainMode(std::function<void(int)> callback) {
-    const char* modeNames[NUM_MODES];
-    for (int i = 0; i < NUM_MODES; i++) {
-        modeNames[i] = MODES[i].name;
+    const int numModes = getNumModes();
+    const int maxModes = Modes::MAX_MODES;
+    if (numModes <= 0) {
+        return;
     }
 
-    selectMode(modeNames, NUM_MODES, callback);
+    if (numModes > maxModes) {
+        displayControl.showMode("Error", "Too many modes");
+        return;
+    }
+
+    const char* modeNames[Modes::MAX_MODES];
+    for (int i = 0; i < numModes; i++) {
+        modeNames[i] = getModeName(i);
+    }
+
+    selectMode(modeNames, numModes, callback);
 }
 
 void ModeManager::selectMode(const char* const options[], int numOptions, std::function<void(int)> callback) {
@@ -95,46 +119,21 @@ void ModeManager::selectMode(const char* const options[], int numOptions, std::f
 }
 
 void ModeManager::handleModeOptions(int modeIndex) {
-    const Mode& mode = MODES[modeIndex];
-
+    const Modes::ModeDef& mode = Modes::getMode(modeIndex);
     if (mode.numOptions <= 0) {
         return;
     }
 
-    const int savedMiniatureIndex = encoderControl.getCurrentIndex();
-    encoderControl.setCurrentIndex(0);
-
-    int focusIndex = 0;
-    int lastRenderedFocusIndex = -1;
-    bool optionSelected = false;
-
-    while (!optionSelected) {
-        if (focusIndex != lastRenderedFocusIndex) {
-            displayControl.showOptions(mode.options, mode.numOptions, focusIndex);
-            lastRenderedFocusIndex = focusIndex;
-        }
-
-        if (encoderControl.checkMovementWithWrap(mode.numOptions)) {
-            focusIndex = encoderControl.getCurrentIndex();
-        }
-
-        if (encoderControl.isShortPress()) {
-            const int selectedOption = focusIndex;
-            encoderControl.setCurrentIndex(savedMiniatureIndex);
-
-            Serial0.print("Selected option: ");
-            Serial0.println(mode.options[selectedOption]);
-
-            // Minimal action wiring (we can expand this per-mode next)
-            if (modeIndex == 0 && selectedOption == 0) {
-                addNewMiniature();
+    selectMode(
+        mode.options,
+        mode.numOptions,
+        [&](int optionIndex) {
+            if (optionIndex < 0 || optionIndex >= mode.numOptions) {
+                return;
             }
-
-            optionSelected = true;
+            if (mode.actions[optionIndex]) {
+                mode.actions[optionIndex](*this);
+            }
         }
-
-        delay(10);
-    }
-
-    encoderControl.setCurrentIndex(savedMiniatureIndex);
+    );
 }

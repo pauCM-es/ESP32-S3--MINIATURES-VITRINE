@@ -26,22 +26,25 @@ The mode menu is opened with the dedicated mode button:
 
 ## Where modes are defined
 
-Modes are currently defined as a static array:
+Modes are defined in a small registry module under `src/modes/`:
 
-- `struct Mode { name, options[], numOptions }`
-- `const Mode MODES[] = { ... }`
-- `NUM_MODES`
+- `Modes::ModeDef` in [src/modes/ModesRegistry.h](../src/modes/ModesRegistry.h)
+- `MODE_DEFS[]` in [src/modes/modes_registry.cpp](../src/modes/modes_registry.cpp)
 
-Defined in: [src/hardware/ModeManager.h](../src/hardware/ModeManager.h)
+Each `ModeDef` contains:
+
+- `name`
+- `options[]` + `numOptions`
+- `actions[]` (function pointers) to run when an option is selected
 
 ## Menu flow
 
 High-level call flow:
 
-1. `ModeManager::selectMainMode(...)` builds a temporary `modeNames[]` array from `MODES[i].name`
-2. It forwards to `ModeManager::selectMode(modeNames, NUM_MODES, ...)`
+1. `ModeManager::selectMainMode(...)` builds a temporary `modeNames[]` array from `Modes::getMode(i).name`
+2. It forwards to `ModeManager::selectMode(modeNames, numModes, ...)`
 3. After selection, `main.cpp` calls `ModeManager::handleModeOptions(modeIndex)`
-4. `handleModeOptions(...)` shows `MODES[modeIndex].options[]` and triggers the chosen action
+4. `handleModeOptions(...)` shows `Modes::getMode(modeIndex).options[]` and runs the chosen `actions[]` callback
 
 Implementation: [src/hardware/ModeManager.cpp](../src/hardware/ModeManager.cpp)
 
@@ -73,19 +76,13 @@ When entering a menu, the firmware saves the current miniature index, resets the
 
 This prevents a mode menu from changing which miniature is currently selected.
 
-## Adding a new mode (current structure)
+## Adding a new mode
 
-1. Add a new entry to `MODES[]` in [src/hardware/ModeManager.h](../src/hardware/ModeManager.h)
-2. Extend `ModeManager::handleModeOptions(modeIndex)` in
-   [src/hardware/ModeManager.cpp](../src/hardware/ModeManager.cpp) to perform actions for the new mode/options
-3. Keep actions short and always redraw/restore to the main screen on exit
+1. Create a new mode handler file under `src/modes/` (e.g. `MyNewMode.h/.cpp`) and implement your action functions.
+2. Register the mode in [src/modes/modes_registry.cpp](../src/modes/modes_registry.cpp):
 
-## Recommended refactor (when modes grow)
+- add a new `ModeDef` entry with `name`, `options`, `numOptions`, `actions`
 
-When mode actions expand, move toward:
+3. Keep `ModeManager` as the menu/input orchestrator; keep mode actions in the per-mode files.
 
-- `src/modes/<ModeName>.cpp`: mode-specific option/action code
-- `src/modes/modes_registry.cpp`: single place where mode list is registered
-- Keep `ModeManager` as the menu/input orchestrator
-
-This keeps `ModeManager` small and makes modes easier to extend and test.
+Tip: mode action functions receive a `ModeManager&`, so they can reuse helpers like `ModeManager::showStatus(...)`.

@@ -108,7 +108,7 @@ void loop() {
       LOGI("btn", "BTN_MODE pressed");
       modeManager.selectMainMode(
         [&](int modeIndex) {
-          LOGI("mode", "Selected mode %d: %s", modeIndex, MODES[modeIndex].name);
+          LOGI("mode", "Selected mode %d: %s", modeIndex, modeManager.getModeName(modeIndex));
           modeManager.handleModeOptions(modeIndex);
 
           // Sync and refresh after menu interaction

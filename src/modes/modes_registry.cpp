@@ -1,0 +1,53 @@
+#include "ModesRegistry.h"
+
+#include "AddMiniMode.h"
+#include "AmbientLightMode.h"
+#include "MiniatureInfoMode.h"
+#include "SettingsMode.h"
+
+namespace Modes {
+
+static const ModeDef MODE_DEFS[] = {
+    {
+        "Add Mini",
+        {"Start NFC Read"},
+        1,
+        {addMini_startNfcRead}
+    },
+    {
+        "Settings",
+        {"Backlight Brightness", "Speed ambient lights", "Reset"},
+        3,
+        {settings_backlightBrightness, settings_ambientSpeed, settings_reset}
+    },
+    {
+        "Ambient Light",
+        {"All Lights", "Random", "Rainbow"},
+        3,
+        {ambient_allLights, ambient_random, ambient_rainbow}
+    },
+    {
+        "Miniature Info",
+        {"View Details"},
+        1,
+        {info_viewDetails}
+    },
+};
+
+static const int MODE_COUNT = sizeof(MODE_DEFS) / sizeof(MODE_DEFS[0]);
+
+int getNumModes() {
+    return MODE_COUNT;
+}
+
+const ModeDef& getMode(int index) {
+    if (index < 0) {
+        return MODE_DEFS[0];
+    }
+    if (index >= MODE_COUNT) {
+        return MODE_DEFS[MODE_COUNT - 1];
+    }
+    return MODE_DEFS[index];
+}
+
+} // namespace Modes
