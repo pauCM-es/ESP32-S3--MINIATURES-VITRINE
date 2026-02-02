@@ -43,8 +43,16 @@ int EncoderControl::getCurrentIndex() {
     return currentIndex;
 }
 
+void EncoderControl::setCurrentIndex(int index) {
+    currentIndex = index;
+}
+
 // Check if encoder has moved and update index if needed
 bool EncoderControl::checkMovement() {
+    return checkMovementWithWrap(MAX_MINIATURES);
+}
+
+bool EncoderControl::checkMovementWithWrap(int wrapMax) {
     const long newPosition = encoder->getCount() / 2;  // Divide by 2 for half-step encoding
     if (newPosition == lastPosition) {
         return false;
@@ -55,7 +63,7 @@ bool EncoderControl::checkMovement() {
     if (delta > 4) delta = 4;
     if (delta < -4) delta = -4;
 
-    currentIndex = wrapIndex(currentIndex + static_cast<int>(delta), MAX_MINIATURES);
+    currentIndex = wrapIndex(currentIndex + static_cast<int>(delta), wrapMax);
     lastPosition = newPosition;
     return true;
 }

@@ -106,9 +106,17 @@ void loop() {
   if (modeBtnState != lastModeBtnState) {
     if (modeBtnState == LOW) {
       LOGI("btn", "BTN_MODE pressed");
-      const boolean isStandby = ledMovementControl.getIsStandbyLight();
-      ledMovementControl.setFocusMode(currentIndex, !isStandby);
-      
+      modeManager.selectMainMode(
+        [&](int modeIndex) {
+          LOGI("mode", "Selected mode %d: %s", modeIndex, MODES[modeIndex].name);
+          modeManager.handleModeOptions(modeIndex);
+
+          // Sync and refresh after menu interaction
+          currentIndex = encoderControl.getCurrentIndex();
+          displayControl.showMiniatureInfo(currentIndex);
+          ledMovementControl.setFocusMode(currentIndex);
+        }
+      );
     }
     lastModeBtnState = modeBtnState;
   }

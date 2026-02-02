@@ -49,44 +49,92 @@ void ModeManager::setStandbyBrightness(uint8_t brightness) {
    displayControl.showMode("Settings", "Reading tag...");
 }
 
+void ModeManager::selectMainMode(std::function<void(int)> callback) {
+    const char* modeNames[NUM_MODES];
+    for (int i = 0; i < NUM_MODES; i++) {
+        modeNames[i] = MODES[i].name;
+    }
+
+    selectMode(modeNames, NUM_MODES, callback);
+}
+
 void ModeManager::selectMode(const char* const options[], int numOptions, std::function<void(int)> callback) {
+    if (numOptions <= 0) {
+        return;
+    }
+
+    const int savedMiniatureIndex = encoderControl.getCurrentIndex();
+    encoderControl.setCurrentIndex(0);
+
     int focusIndex = 0;
+    int lastRenderedFocusIndex = -1;
     bool optionSelected = false;
 
     while (!optionSelected) {
-        displayControl.showOptions(options, numOptions, focusIndex);
+        if (focusIndex != lastRenderedFocusIndex) {
+            displayControl.showOptions(options, numOptions, focusIndex);
+            lastRenderedFocusIndex = focusIndex;
+        }
 
-        if (encoderControl.checkMovement()) {
-            focusIndex = encoderControl.getCurrentIndex() % numOptions;
+        if (encoderControl.checkMovementWithWrap(numOptions)) {
+            focusIndex = encoderControl.getCurrentIndex();
         }
 
         if (encoderControl.isShortPress()) {
-            callback(focusIndex);
+            const int selectedIndex = focusIndex;
+            encoderControl.setCurrentIndex(savedMiniatureIndex);
+            callback(selectedIndex);
             optionSelected = true;
         }
 
         delay(10);
     }
+
+    // Safety: ensure we restore even if the loop exits unexpectedly.
+    encoderControl.setCurrentIndex(savedMiniatureIndex);
 }
 
 void ModeManager::handleModeOptions(int modeIndex) {
     const Mode& mode = MODES[modeIndex];
+
+    if (mode.numOptions <= 0) {
+        return;
+    }
+
+    const int savedMiniatureIndex = encoderControl.getCurrentIndex();
+    encoderControl.setCurrentIndex(0);
+
     int focusIndex = 0;
+    int lastRenderedFocusIndex = -1;
     bool optionSelected = false;
 
     while (!optionSelected) {
-        displayControl.showOptions(mode.options, mode.numOptions, focusIndex);
+        if (focusIndex != lastRenderedFocusIndex) {
+            displayControl.showOptions(mode.options, mode.numOptions, focusIndex);
+            lastRenderedFocusIndex = focusIndex;
+        }
 
-        if (encoderControl.checkMovement()) {
-            focusIndex = encoderControl.getCurrentIndex() % mode.numOptions;
+        if (encoderControl.checkMovementWithWrap(mode.numOptions)) {
+            focusIndex = encoderControl.getCurrentIndex();
         }
 
         if (encoderControl.isShortPress()) {
+            const int selectedOption = focusIndex;
+            encoderControl.setCurrentIndex(savedMiniatureIndex);
+
             Serial0.print("Selected option: ");
-            Serial0.println(mode.options[focusIndex]);
+            Serial0.println(mode.options[selectedOption]);
+
+            // Minimal action wiring (we can expand this per-mode next)
+            if (modeIndex == 0 && selectedOption == 0) {
+                addNewMiniature();
+            }
+
             optionSelected = true;
         }
 
         delay(10);
     }
+
+    encoderControl.setCurrentIndex(savedMiniatureIndex);
 }

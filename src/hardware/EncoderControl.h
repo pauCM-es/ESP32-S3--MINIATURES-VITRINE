@@ -34,9 +34,15 @@ public:
     
     // Get current selection index
     int getCurrentIndex();
+
+    // Set current selection index (does not affect physical encoder count tracking)
+    void setCurrentIndex(int index);
     
     // Check if encoder has moved and update index if needed
     bool checkMovement();
+
+    // Check if encoder has moved and update index with a custom wrap range
+    bool checkMovementWithWrap(int wrapMax);
     
     // Check if button has been pressed
     bool isButtonPressed();
