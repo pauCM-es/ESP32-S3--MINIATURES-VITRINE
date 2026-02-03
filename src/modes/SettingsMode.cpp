@@ -262,4 +262,21 @@ void settings_reset(ModeManager& manager) {
     delay(900);
 }
 
+void settings_powerOff(ModeManager& manager) {
+    static const char* const confirmOptions[] = {
+        "Cancel",
+        "Power off",
+    };
+
+    manager.selectMode(confirmOptions, 2, [&](int idx) {
+        if (idx != 1) {
+            return;
+        }
+
+        manager.showStatus("Power", "Deep sleep (reset to wake)");
+        delay(800);
+        manager.powerOffDeepSleep();
+    }, 0);
+}
+
 } // namespace Modes

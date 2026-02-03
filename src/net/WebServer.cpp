@@ -152,45 +152,43 @@ void WebServer::handleApiSettingsPost(AsyncWebServerRequest* request, uint8_t* d
     }
 
     // Generic numeric settings (optional)
-    if (doc.containsKey("sleepTimeoutMinutes")) {
+    if (doc["sleepTimeoutMinutes"].is<uint16_t>() || doc["sleepTimeoutMinutes"].is<int>()) {
         modeManager->setSleepTimeoutMinutes(doc["sleepTimeoutMinutes"].as<uint16_t>());
     }
-    if (doc.containsKey("backlightBrightnessPercent")) {
+    if (doc["backlightBrightnessPercent"].is<uint8_t>() || doc["backlightBrightnessPercent"].is<int>()) {
         modeManager->setBacklightBrightnessPercent(doc["backlightBrightnessPercent"].as<uint8_t>());
     }
-    if (doc.containsKey("ledBrightnessPercent")) {
+    if (doc["ledBrightnessPercent"].is<uint8_t>() || doc["ledBrightnessPercent"].is<int>()) {
         modeManager->setLedBrightnessPercent(doc["ledBrightnessPercent"].as<uint8_t>());
     }
-    if (doc.containsKey("standbyBrightnessPercent")) {
+    if (doc["standbyBrightnessPercent"].is<uint8_t>() || doc["standbyBrightnessPercent"].is<int>()) {
         modeManager->setStandbyBrightnessPercent(doc["standbyBrightnessPercent"].as<uint8_t>());
     }
 
     // Ambient
-    if (doc.containsKey("ambientAllLightsBrightnessPercent")) {
+    if (doc["ambientAllLightsBrightnessPercent"].is<uint8_t>() || doc["ambientAllLightsBrightnessPercent"].is<int>()) {
         modeManager->setAmbientAllLightsBrightnessPercent(doc["ambientAllLightsBrightnessPercent"].as<uint8_t>());
     }
-    if (doc.containsKey("ambientRandomMaxBrightnessPercent")) {
+    if (doc["ambientRandomMaxBrightnessPercent"].is<uint8_t>() || doc["ambientRandomMaxBrightnessPercent"].is<int>()) {
         modeManager->setAmbientRandomMaxBrightnessPercent(doc["ambientRandomMaxBrightnessPercent"].as<uint8_t>());
     }
-    if (doc.containsKey("ambientRandomDensity")) {
+    if (doc["ambientRandomDensity"].is<uint8_t>() || doc["ambientRandomDensity"].is<int>()) {
         modeManager->setAmbientRandomDensity(doc["ambientRandomDensity"].as<uint8_t>());
     }
-    if (doc.containsKey("ambientRandomFrameMs") || doc.containsKey("ambientRandomStep")) {
-        const uint16_t frameMs = doc.containsKey("ambientRandomFrameMs")
-            ? doc["ambientRandomFrameMs"].as<uint16_t>()
-            : modeManager->getAmbientRandomFrameMs();
-        const uint8_t step = doc.containsKey("ambientRandomStep")
-            ? doc["ambientRandomStep"].as<uint8_t>()
-            : modeManager->getAmbientRandomStep();
+    const bool hasFrame = doc["ambientRandomFrameMs"].is<uint16_t>() || doc["ambientRandomFrameMs"].is<int>();
+    const bool hasStep = doc["ambientRandomStep"].is<uint8_t>() || doc["ambientRandomStep"].is<int>();
+    if (hasFrame || hasStep) {
+        const uint16_t frameMs = hasFrame ? doc["ambientRandomFrameMs"].as<uint16_t>() : modeManager->getAmbientRandomFrameMs();
+        const uint8_t step = hasStep ? doc["ambientRandomStep"].as<uint8_t>() : modeManager->getAmbientRandomStep();
         modeManager->setAmbientRandomSpeed(frameMs, step);
     }
 
     bool wifiChanged = false;
 
     // WiFi STA
-    const bool hasStaEnabled = doc.containsKey("wifiStaEnabled");
-    const bool hasStaSsid = doc.containsKey("wifiStaSsid");
-    const bool hasStaPass = doc.containsKey("wifiStaPass");
+    const bool hasStaEnabled = doc["wifiStaEnabled"].is<bool>();
+    const bool hasStaSsid = doc["wifiStaSsid"].is<const char*>();
+    const bool hasStaPass = doc["wifiStaPass"].is<const char*>();
     if (hasStaEnabled || hasStaSsid || hasStaPass) {
         const bool enabled = hasStaEnabled ? doc["wifiStaEnabled"].as<bool>() : modeManager->getWifiStaEnabled();
         const char* ssid = hasStaSsid ? doc["wifiStaSsid"].as<const char*>() : modeManager->getWifiStaSsid();
@@ -199,8 +197,8 @@ void WebServer::handleApiSettingsPost(AsyncWebServerRequest* request, uint8_t* d
     }
 
     // WiFi AP
-    const bool hasApSsid = doc.containsKey("wifiApSsid");
-    const bool hasApPass = doc.containsKey("wifiApPass");
+    const bool hasApSsid = doc["wifiApSsid"].is<const char*>();
+    const bool hasApPass = doc["wifiApPass"].is<const char*>();
     if (hasApSsid || hasApPass) {
         const char* ssid = hasApSsid ? doc["wifiApSsid"].as<const char*>() : modeManager->getWifiApSsid();
         const char* pass = hasApPass ? doc["wifiApPass"].as<const char*>() : nullptr;

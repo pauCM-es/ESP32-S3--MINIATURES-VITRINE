@@ -7,6 +7,8 @@
 #include "modes/ModesRegistry.h"
 #include "util/SettingsStore.h"
 #include <cstring>
+#include <WiFi.h>
+#include "esp_sleep.h"
 
 ModeManager::ModeManager(LedMovementControl& ledMovementControl, NFCReaderControl& nfcReader, TFTDisplayControl& displayControl, EncoderControl& encoderControl)
     : ledMovementControl(ledMovementControl), nfcReader(nfcReader), displayControl(displayControl), encoderControl(encoderControl) {}
@@ -500,4 +502,24 @@ uint32_t ModeManager::getSleepTimeoutMs() const {
 bool ModeManager::isSleepMode(int modeIndex) const {
     const char* name = getModeName(modeIndex);
     return name && (strcmp(name, "Sleep") == 0);
+}
+
+[[noreturn]] void ModeManager::powerOffDeepSleep() {
+    // Best-effort shutdown of peripherals before deep sleep.
+    ledMovementControl.stopAmbient();
+    ledMovementControl.clearAll();
+    displayControl.setBacklight(false);
+
+    // Stop WiFi to reduce current before sleeping.
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_MODE_NULL);
+
+    // No wake sources: behaves like "off" until reset/power-cycle.
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+    esp_deep_sleep_start();
+
+    // Should never reach here.
+    while (true) {
+        delay(1000);
+    }
 }

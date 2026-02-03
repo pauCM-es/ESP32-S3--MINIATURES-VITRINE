@@ -71,6 +71,8 @@ public:
 
     // Sleep helpers
     void enterSleep();
+    // Deep-sleep (lowest power). By default, no wake sources are configured; wake via reset/power-cycle.
+    [[noreturn]] void powerOffDeepSleep();
     void wakeFromSleep(int currentIndex);
     bool isSleeping() const;
     void setSleepTimeoutMinutes(uint16_t minutes);
