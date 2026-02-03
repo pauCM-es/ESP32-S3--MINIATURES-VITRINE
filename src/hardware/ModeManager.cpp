@@ -9,6 +9,7 @@
 #include <cstring>
 #include <WiFi.h>
 #include "esp_sleep.h"
+#include "driver/gpio.h"
 
 ModeManager::ModeManager(LedMovementControl& ledMovementControl, NFCReaderControl& nfcReader, TFTDisplayControl& displayControl, EncoderControl& encoderControl)
     : ledMovementControl(ledMovementControl), nfcReader(nfcReader), displayControl(displayControl), encoderControl(encoderControl) {}
@@ -508,7 +509,20 @@ bool ModeManager::isSleepMode(int modeIndex) const {
     // Best-effort shutdown of peripherals before deep sleep.
     ledMovementControl.stopAmbient();
     ledMovementControl.clearAll();
+
+    // Make sure the TFT isn't displaying full white if BL is on.
+    displayControl.fillScreen(displayControl.getBlackColor());
     displayControl.setBacklight(false);
+
+#ifdef TFT_BLK
+    // Backlight is PWM-controlled (LEDC). In deep sleep the peripheral can stop,
+    // so we forcibly drive the pin LOW and hold it there.
+    ledcDetachPin(TFT_BLK);
+    pinMode(TFT_BLK, OUTPUT);
+    digitalWrite(TFT_BLK, LOW);
+    gpio_hold_en(static_cast<gpio_num_t>(TFT_BLK));
+    gpio_deep_sleep_hold_en();
+#endif
 
     // Stop WiFi to reduce current before sleeping.
     WiFi.disconnect(true);
