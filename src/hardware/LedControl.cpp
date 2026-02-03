@@ -37,6 +37,33 @@ void LedControl::lightPosition(int position, uint32_t color) {
     strip->show();
 }
 
+void LedControl::setPixel(int position, uint32_t color) {
+    if (position < 0 || position >= NUM_LEDS) {
+        return;
+    }
+    strip->setPixelColor(position, color);
+}
+
+void LedControl::setPixelRGBW(int position, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+    if (position < 0 || position >= NUM_LEDS) {
+        return;
+    }
+    strip->setPixelColor(position, r, g, b, w);
+}
+
+void LedControl::setPixelWhite(int position, uint8_t w) {
+    setPixelRGBW(position, 0, 0, 0, w);
+}
+
+void LedControl::show() {
+    strip->show();
+}
+
+void LedControl::fill(uint32_t color) {
+    strip->fill(color);
+    strip->show();
+}
+
 // Add clearAll method implementation to turn off all LEDs
 void LedControl::clearAll() {
     for (int i = 0; i < NUM_LEDS; i++) {

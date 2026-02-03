@@ -88,6 +88,9 @@ void setup() {
 void loop() {
   // Network is handled asynchronously by ESPAsyncWebServer
 
+  // Advance ambient animations (non-blocking)
+  ledMovementControl.update();
+
   const bool maintenanceActive = MaintenanceMode::getInstance().isActive();
   if (maintenanceActive) {
     if (!lastMaintenanceActive) {
@@ -107,10 +110,26 @@ void loop() {
   if (modeBtnState != lastModeBtnState) {
     if (modeBtnState == LOW) {
       LOGI("btn", "BTN_MODE pressed");
+
+      // Pause ambient while navigating menus
+      ledMovementControl.stopAmbient();
+
       modeManager.selectMainMode(
         [&](int modeIndex) {
+          if (modeIndex < 0) {
+            // Cancel/back: restore focus UI
+            currentIndex = encoderControl.getCurrentIndex();
+            displayControl.showMiniatureInfo(currentIndex);
+            ledMovementControl.setFocusMode(currentIndex);
+            return;
+          }
           LOGI("mode", "Selected mode %d: %s", modeIndex, modeManager.getModeName(modeIndex));
           modeManager.handleModeOptions(modeIndex);
+
+          // If an ambient option was selected, keep ambient active (don't restore focus UI/LEDs)
+          if (ledMovementControl.isAmbientActive()) {
+            return;
+          }
 
           // Sync and refresh after menu interaction
           currentIndex = encoderControl.getCurrentIndex();
@@ -124,36 +143,44 @@ void loop() {
 
   // Check for encoder movement
   if (encoderControl.checkMovement()) {
-    // Update current index from encoder
-    currentIndex = encoderControl.getCurrentIndex();
+    if (ledMovementControl.isAmbientActive()) {
+      // Ignore focus updates while ambient is active
+    } else {
+      // Update current index from encoder
+      currentIndex = encoderControl.getCurrentIndex();
 
-    // Update display with new miniature info
-    displayControl.showMiniatureInfo(currentIndex);
+      // Update display with new miniature info
+      displayControl.showMiniatureInfo(currentIndex);
 
-    if (webServer.getWsServer()) {
-      broadcastEncoderRotate(*webServer.getWsServer(), currentIndex);
-      broadcastDisplayMiniature(*webServer.getWsServer(), currentIndex);
+      if (webServer.getWsServer()) {
+        broadcastEncoderRotate(*webServer.getWsServer(), currentIndex);
+        broadcastDisplayMiniature(*webServer.getWsServer(), currentIndex);
+      }
+
+      // Highlight the corresponding LED position
+      ledMovementControl.setFocusMode(currentIndex,ledMovementControl.getIsStandbyLight() );
+
+      LOGI("encoder", "Selected position: %d", currentIndex);
     }
-
-    // Highlight the corresponding LED position
-    ledMovementControl.setFocusMode(currentIndex,ledMovementControl.getIsStandbyLight() );
-
-    LOGI("encoder", "Selected position: %d", currentIndex);
   }
    if (encoderControl.isButtonPressed()) {
-    LOGI("encoder", "Button press detected! Selecting LED.");
+    if (ledMovementControl.isAmbientActive()) {
+      // Ignore selection mode while ambient is active
+    } else {
+      LOGI("encoder", "Button press detected! Selecting LED.");
 
-    if (webServer.getWsServer()) {
-      broadcastEncoderPress(*webServer.getWsServer(), currentIndex);
+      if (webServer.getWsServer()) {
+        broadcastEncoderPress(*webServer.getWsServer(), currentIndex);
+      }
+
+      // Set selected mode
+      ledMovementControl.setSelectedMode(currentIndex);
+
+      delay(500);
+
+      // Return to focus mode
+      ledMovementControl.setFocusMode(currentIndex);
     }
-
-    // Set selected mode
-    ledMovementControl.setSelectedMode(currentIndex);
-
-    delay(500);
-
-    // Return to focus mode
-    ledMovementControl.setFocusMode(currentIndex);
   }
   
 

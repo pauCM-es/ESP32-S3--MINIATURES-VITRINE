@@ -54,6 +54,21 @@ void ModeManager::showStatus(const char* title, const char* message) {
     displayControl.showMode(title, message);
 }
 
+void ModeManager::ambientAllLights() {
+    // Defaults for now; later make these configurable via Settings
+    const uint8_t brightness = 25;
+    ledMovementControl.setAmbientAllLights(brightness);
+    showStatus("Ambient", "All lights");
+}
+
+void ModeManager::ambientRandom() {
+    // Defaults for now; later make these configurable via Settings
+    const uint8_t maxBrightness = 50;
+    const uint8_t density = 6;
+    ledMovementControl.startAmbientRandom(maxBrightness, density);
+    showStatus("Ambient", "Random");
+}
+
 int ModeManager::getNumModes() const {
     return Modes::getNumModes();
 }
@@ -74,23 +89,39 @@ void ModeManager::selectMainMode(std::function<void(int)> callback) {
         return;
     }
 
-    const char* modeNames[Modes::MAX_MODES];
+    // Add a "Back" entry so users can exit without triggering a mode.
+    const char* modeNames[Modes::MAX_MODES + 1];
     for (int i = 0; i < numModes; i++) {
         modeNames[i] = getModeName(i);
     }
+    modeNames[numModes] = "Back";
 
-    selectMode(modeNames, numModes, callback);
+    selectMode(
+        modeNames,
+        numModes + 1,
+        [&](int selectedIndex) {
+            if (selectedIndex < 0 || selectedIndex >= numModes) {
+                callback(-1);
+                return;
+            }
+            callback(selectedIndex);
+        },
+        /*initialFocusIndex=*/numModes
+    );
 }
 
-void ModeManager::selectMode(const char* const options[], int numOptions, std::function<void(int)> callback) {
+void ModeManager::selectMode(const char* const options[], int numOptions, std::function<void(int)> callback, int initialFocusIndex) {
     if (numOptions <= 0) {
         return;
     }
 
     const int savedMiniatureIndex = encoderControl.getCurrentIndex();
-    encoderControl.setCurrentIndex(0);
+    // Default focus can be set by caller (e.g. "Back")
+    if (initialFocusIndex < 0) initialFocusIndex = 0;
+    if (initialFocusIndex >= numOptions) initialFocusIndex = numOptions - 1;
+    encoderControl.setCurrentIndex(initialFocusIndex);
 
-    int focusIndex = 0;
+    int focusIndex = initialFocusIndex;
     int lastRenderedFocusIndex = -1;
     bool optionSelected = false;
 
@@ -111,6 +142,13 @@ void ModeManager::selectMode(const char* const options[], int numOptions, std::f
             optionSelected = true;
         }
 
+        // Long press cancels the menu
+        if (!optionSelected && encoderControl.isLongPress()) {
+            encoderControl.setCurrentIndex(savedMiniatureIndex);
+            callback(-1);
+            optionSelected = true;
+        }
+
         delay(10);
     }
 
@@ -124,9 +162,16 @@ void ModeManager::handleModeOptions(int modeIndex) {
         return;
     }
 
+    // Add a "Back" option so exiting doesn't run an action.
+    const char* optionsWithBack[Modes::MAX_MODE_OPTIONS + 1];
+    for (int i = 0; i < mode.numOptions; i++) {
+        optionsWithBack[i] = mode.options[i];
+    }
+    optionsWithBack[mode.numOptions] = "Back";
+
     selectMode(
-        mode.options,
-        mode.numOptions,
+        optionsWithBack,
+        mode.numOptions + 1,
         [&](int optionIndex) {
             if (optionIndex < 0 || optionIndex >= mode.numOptions) {
                 return;
@@ -134,6 +179,7 @@ void ModeManager::handleModeOptions(int modeIndex) {
             if (mode.actions[optionIndex]) {
                 mode.actions[optionIndex](*this);
             }
-        }
+        },
+        /*initialFocusIndex=*/mode.numOptions
     );
 }

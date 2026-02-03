@@ -22,9 +22,9 @@ static const ModeDef MODE_DEFS[] = {
     },
     {
         "Ambient Light",
-        {"All Lights", "Random", "Rainbow"},
-        3,
-        {ambient_allLights, ambient_random, ambient_rainbow}
+        {"All Lights", "Random"},
+        2,
+        {ambient_allLights, ambient_random}
     },
     {
         "Miniature Info",

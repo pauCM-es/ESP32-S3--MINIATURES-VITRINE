@@ -18,10 +18,14 @@ public:
     // Small UI helper for mode actions implemented outside ModeManager
     void showStatus(const char* title, const char* message);
 
+    // Ambient helpers
+    void ambientAllLights();
+    void ambientRandom();
+
     // Show the top-level list of modes (via ModesRegistry) and return the selected mode index
     void selectMainMode(std::function<void(int)> callback);
 
-    void selectMode(const char* const options[], int numOptions, std::function<void(int)> callback);
+    void selectMode(const char* const options[], int numOptions, std::function<void(int)> callback, int initialFocusIndex = 0);
     void handleModeOptions(int modeIndex);
 
     // Introspection helpers for callers (e.g., logging)

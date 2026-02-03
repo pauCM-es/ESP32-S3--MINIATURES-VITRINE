@@ -24,6 +24,21 @@ public:
     
     // Light a specific position with a color
     void lightPosition(int position, uint32_t color);
+
+    // Set a pixel color without calling show() (useful for animations)
+    void setPixel(int position, uint32_t color);
+
+    // Set a pixel using explicit RGBW components (no show)
+    void setPixelRGBW(int position, uint8_t r, uint8_t g, uint8_t b, uint8_t w);
+
+    // Convenience: set only the white channel (no show)
+    void setPixelWhite(int position, uint8_t w);
+
+    // Push pending pixel changes to the strip
+    void show();
+
+    // Fill all pixels with a color (and show)
+    void fill(uint32_t color);
     
     // Clear all LEDs (turn them off by setting to 0)
     void clearAll();

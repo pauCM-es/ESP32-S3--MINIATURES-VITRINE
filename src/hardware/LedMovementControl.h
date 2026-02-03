@@ -17,6 +17,15 @@ public:
     // Set a specific miniature to selected mode (green color)
     void setSelectedMode(int position);
 
+    // Ambient patterns
+    void setAmbientAllLights(uint8_t brightnessPercentage);
+    void startAmbientRandom(uint8_t maxBrightnessPercentage, uint8_t density);
+    void stopAmbient();
+    bool isAmbientActive() const;
+
+    // Call frequently from loop() to advance animations
+    void update();
+
     boolean getIsStandbyLight() {
         return isStandbyLight;
     }
@@ -24,6 +33,22 @@ public:
 private:
     LedControl& ledControl;
     boolean isStandbyLight = false;
+
+    enum class Pattern {
+        Focus,
+        Standby,
+        AmbientAll,
+        AmbientRandom
+    };
+
+    Pattern pattern = Pattern::Focus;
+
+    // Ambient random state
+    unsigned long lastAmbientUpdateMs = 0;
+    uint8_t ambientMaxBrightness = 60;
+    uint8_t ambientDensity = 6;
+    uint8_t ambientLevels[NUM_LEDS] = {0};
+    int8_t ambientDelta[NUM_LEDS] = {0};
 };
 
 #endif
