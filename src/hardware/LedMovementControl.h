@@ -26,6 +26,9 @@ public:
     // Call frequently from loop() to advance animations
     void update();
 
+    // Turn off all LEDs immediately
+    void clearAll();
+
     boolean getIsStandbyLight() {
         return isStandbyLight;
     }

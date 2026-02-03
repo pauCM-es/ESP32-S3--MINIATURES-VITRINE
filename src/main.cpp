@@ -31,6 +31,8 @@ int currentIndex = 0;
 bool isNFCConnected = false;
 int lastModeBtnState = HIGH;
 bool lastMaintenanceActive = false;
+unsigned long lastActivityMs = 0;
+bool inMenu = false;
 
 void setup() {
   // Initialize serial communication + logging
@@ -81,6 +83,8 @@ void setup() {
   displayControl.showMiniatureInfo(currentIndex);
   ledMovementControl.setFocusMode(currentIndex);
 
+  lastActivityMs = millis();
+
   // Set standby brightness
   // modeManager.setStandbyBrightness(50);
 }
@@ -90,6 +94,29 @@ void loop() {
 
   // Advance ambient animations (non-blocking)
   ledMovementControl.update();
+
+  // Sleep handling: wake on any user input
+  int modeBtnState = digitalRead(BTN_MODE);
+  const bool modeBtnPressedEdge = (modeBtnState != lastModeBtnState) && (modeBtnState == LOW);
+
+  if (modeManager.isSleeping()) {
+    const bool encoderMoved = encoderControl.checkMovement();
+    const bool encoderPressed = encoderControl.isButtonPressed();
+
+    if (encoderMoved || encoderPressed || modeBtnPressedEdge) {
+      currentIndex = encoderControl.getCurrentIndex();
+      modeManager.wakeFromSleep(currentIndex);
+      lastActivityMs = millis();
+
+      // Prevent the wake press from also triggering menu entry
+      lastModeBtnState = modeBtnState;
+    } else {
+      // Keep loop light while sleeping
+      lastModeBtnState = modeBtnState;
+      delay(20);
+    }
+    return;
+  }
 
   const bool maintenanceActive = MaintenanceMode::getInstance().isActive();
   if (maintenanceActive) {
@@ -104,15 +131,28 @@ void loop() {
   }
 
   lastMaintenanceActive = false;
-  
-  int modeBtnState = digitalRead(BTN_MODE);
+
+  // Auto-sleep after inactivity (if enabled)
+  if (!inMenu) {
+    const uint32_t timeoutMs = modeManager.getSleepTimeoutMs();
+    if (timeoutMs > 0 && (millis() - lastActivityMs) > timeoutMs) {
+      modeManager.enterSleep();
+      lastModeBtnState = modeBtnState;
+      return;
+    }
+  }
+
   // Detect button press (active LOW due to INPUT_PULLUP)
   if (modeBtnState != lastModeBtnState) {
     if (modeBtnState == LOW) {
       LOGI("btn", "BTN_MODE pressed");
 
+      lastActivityMs = millis();
+
       // Pause ambient while navigating menus
       ledMovementControl.stopAmbient();
+
+      inMenu = true;
 
       modeManager.selectMainMode(
         [&](int modeIndex) {
@@ -123,6 +163,13 @@ void loop() {
             ledMovementControl.setFocusMode(currentIndex);
             return;
           }
+
+          // Sleep is a special top-level action
+          if (modeManager.isSleepMode(modeIndex)) {
+            modeManager.enterSleep();
+            return;
+          }
+
           LOGI("mode", "Selected mode %d: %s", modeIndex, modeManager.getModeName(modeIndex));
           modeManager.handleModeOptions(modeIndex);
 
@@ -137,12 +184,16 @@ void loop() {
           ledMovementControl.setFocusMode(currentIndex);
         }
       );
+
+      inMenu = false;
+      lastActivityMs = millis();
     }
     lastModeBtnState = modeBtnState;
   }
 
   // Check for encoder movement
   if (encoderControl.checkMovement()) {
+    lastActivityMs = millis();
     if (ledMovementControl.isAmbientActive()) {
       // Ignore focus updates while ambient is active
     } else {
@@ -164,6 +215,7 @@ void loop() {
     }
   }
    if (encoderControl.isButtonPressed()) {
+    lastActivityMs = millis();
     if (ledMovementControl.isAmbientActive()) {
       // Ignore selection mode while ambient is active
     } else {

@@ -22,6 +22,15 @@ public:
     void ambientAllLights();
     void ambientRandom();
 
+    // Sleep helpers
+    void enterSleep();
+    void wakeFromSleep(int currentIndex);
+    bool isSleeping() const;
+    void setSleepTimeoutMinutes(uint16_t minutes);
+    uint16_t getSleepTimeoutMinutes() const;
+    uint32_t getSleepTimeoutMs() const;
+    bool isSleepMode(int modeIndex) const;
+
     // Show the top-level list of modes (via ModesRegistry) and return the selected mode index
     void selectMainMode(std::function<void(int)> callback);
 
@@ -37,6 +46,9 @@ private:
     NFCReaderControl& nfcReader;
     TFTDisplayControl& displayControl;
     EncoderControl& encoderControl;
+
+    bool sleeping = false;
+    uint16_t sleepTimeoutMinutes = 5;
 };
 
 #endif

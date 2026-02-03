@@ -4,6 +4,7 @@
 #include "AmbientLightMode.h"
 #include "MiniatureInfoMode.h"
 #include "SettingsMode.h"
+#include "SleepMode.h"
 
 namespace Modes {
 
@@ -16,9 +17,15 @@ static const ModeDef MODE_DEFS[] = {
     },
     {
         "Settings",
-        {"Backlight Brightness", "Speed ambient lights", "Reset"},
-        3,
-        {settings_backlightBrightness, settings_ambientSpeed, settings_reset}
+        {"Backlight Brightness", "Speed ambient lights", "Sleep timeout", "Reset"},
+        4,
+        {settings_backlightBrightness, settings_ambientSpeed, settings_sleepTimeout, settings_reset}
+    },
+    {
+        "Sleep",
+        {"Enter sleep"},
+        1,
+        {sleep_enter}
     },
     {
         "Ambient Light",

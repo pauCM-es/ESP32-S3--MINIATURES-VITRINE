@@ -28,6 +28,9 @@ public:
     
     // Initialize display
     bool begin();
+
+    // Backlight control (if TFT_BLK is available)
+    void setBacklight(bool on);
     
     // Clear display
     void clear();

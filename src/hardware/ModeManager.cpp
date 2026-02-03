@@ -4,6 +4,7 @@
 #include "DisplayControl.h"
 #include "EncoderControl.h"
 #include "modes/ModesRegistry.h"
+#include <cstring>
 
 ModeManager::ModeManager(LedMovementControl& ledMovementControl, NFCReaderControl& nfcReader, TFTDisplayControl& displayControl, EncoderControl& encoderControl)
     : ledMovementControl(ledMovementControl), nfcReader(nfcReader), displayControl(displayControl), encoderControl(encoderControl) {}
@@ -182,4 +183,50 @@ void ModeManager::handleModeOptions(int modeIndex) {
         },
         /*initialFocusIndex=*/mode.numOptions
     );
+}
+
+void ModeManager::enterSleep() {
+    if (sleeping) {
+        return;
+    }
+
+    sleeping = true;
+    ledMovementControl.stopAmbient();
+    ledMovementControl.clearAll();
+    displayControl.setBacklight(false);
+}
+
+void ModeManager::wakeFromSleep(int currentIndex) {
+    if (!sleeping) {
+        return;
+    }
+
+    sleeping = false;
+    displayControl.setBacklight(true);
+    displayControl.showMiniatureInfo(currentIndex);
+    ledMovementControl.setFocusMode(currentIndex);
+}
+
+bool ModeManager::isSleeping() const {
+    return sleeping;
+}
+
+void ModeManager::setSleepTimeoutMinutes(uint16_t minutes) {
+    sleepTimeoutMinutes = minutes;
+}
+
+uint16_t ModeManager::getSleepTimeoutMinutes() const {
+    return sleepTimeoutMinutes;
+}
+
+uint32_t ModeManager::getSleepTimeoutMs() const {
+    if (sleepTimeoutMinutes == 0) {
+        return 0;
+    }
+    return static_cast<uint32_t>(sleepTimeoutMinutes) * 60UL * 1000UL;
+}
+
+bool ModeManager::isSleepMode(int modeIndex) const {
+    const char* name = getModeName(modeIndex);
+    return name && (strcmp(name, "Sleep") == 0);
 }

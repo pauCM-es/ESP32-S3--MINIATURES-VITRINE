@@ -122,3 +122,9 @@ void LedMovementControl::update() {
     }
     ledControl.show();
 }
+
+void LedMovementControl::clearAll() {
+    pattern = Pattern::Focus;
+    isStandbyLight = false;
+    ledControl.clearAll();
+}

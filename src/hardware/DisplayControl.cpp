@@ -11,7 +11,7 @@ bool TFTDisplayControl::begin() {
     // Configure backlight pin (if available)
     #ifdef TFT_BLK
     pinMode(TFT_BLK, OUTPUT);
-    digitalWrite(TFT_BLK, HIGH); // Turn on backlight
+    setBacklight(true);
     #endif
     
     // Initialize SPI using hardware SPI pins
@@ -34,6 +34,14 @@ bool TFTDisplayControl::begin() {
     delay(2000);
     
     return true;
+}
+
+void TFTDisplayControl::setBacklight(bool on) {
+#ifdef TFT_BLK
+    digitalWrite(TFT_BLK, on ? HIGH : LOW);
+#else
+    (void)on;
+#endif
 }
 
 // Clear display
