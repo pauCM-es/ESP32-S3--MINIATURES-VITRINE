@@ -76,6 +76,9 @@ void setup() {
   encoderControl.begin();
   // Button Mode pin configuration
   pinMode(BTN_MODE, INPUT_PULLUP);
+
+  // Load persisted settings and apply them to hardware
+  modeManager.begin();
   
   // Set initial position
   currentIndex = 0;

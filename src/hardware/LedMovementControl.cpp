@@ -64,6 +64,17 @@ void LedMovementControl::startAmbientRandom(uint8_t maxBrightnessPercentage, uin
     randomSeed(micros());
 }
 
+void LedMovementControl::setAmbientRandomSpeed(uint16_t frameMs, uint8_t step) {
+    if (frameMs == 0) {
+        frameMs = 40;
+    }
+    if (step == 0) {
+        step = 6;
+    }
+    ambientFrameMs = frameMs;
+    ambientStep = step;
+}
+
 void LedMovementControl::stopAmbient() {
     if (pattern == Pattern::AmbientAll || pattern == Pattern::AmbientRandom) {
         pattern = Pattern::Focus;
@@ -82,13 +93,13 @@ void LedMovementControl::update() {
 
     const unsigned long now = millis();
     // ~25 FPS max (lower refresh reduces chance of visual glitches)
-    if (lastAmbientUpdateMs != 0 && (now - lastAmbientUpdateMs) < 40) {
+    if (lastAmbientUpdateMs != 0 && (now - lastAmbientUpdateMs) < ambientFrameMs) {
         return;
     }
     lastAmbientUpdateMs = now;
 
     const uint8_t maxW = map(ambientMaxBrightness, 0, 100, 0, 255);
-    const uint8_t step = 6;
+    const uint8_t step = ambientStep;
 
     int active = 0;
     for (int i = 0; i < NUM_LEDS; i++) {

@@ -10,6 +10,11 @@
 class TFTDisplayControl {
 private:
     Adafruit_ST7789* display;
+
+    uint8_t backlightBrightnessPercent = 100;
+    bool backlightOn = true;
+
+    void applyBacklight();
     
     // Color definitions for 16-bit color
     static const uint16_t BLACK = 0x0000;
@@ -31,6 +36,8 @@ public:
 
     // Backlight control (if TFT_BLK is available)
     void setBacklight(bool on);
+    void setBacklightBrightnessPercent(uint8_t percent);
+    uint8_t getBacklightBrightnessPercent() const { return backlightBrightnessPercent; }
     
     // Clear display
     void clear();

@@ -10,7 +10,13 @@ TFTDisplayControl::TFTDisplayControl() {
 bool TFTDisplayControl::begin() {
     // Configure backlight pin (if available)
     #ifdef TFT_BLK
-    pinMode(TFT_BLK, OUTPUT);
+    // Use PWM so brightness can be controlled (LEDC is available on ESP32-S3)
+    static constexpr uint8_t kPwmChannel = 0;
+    static constexpr uint32_t kPwmFreqHz = 5000;
+    static constexpr uint8_t kPwmResolutionBits = 8;
+
+    ledcSetup(kPwmChannel, kPwmFreqHz, kPwmResolutionBits);
+    ledcAttachPin(TFT_BLK, kPwmChannel);
     setBacklight(true);
     #endif
     
@@ -38,9 +44,28 @@ bool TFTDisplayControl::begin() {
 
 void TFTDisplayControl::setBacklight(bool on) {
 #ifdef TFT_BLK
-    digitalWrite(TFT_BLK, on ? HIGH : LOW);
+    backlightOn = on;
+    applyBacklight();
 #else
     (void)on;
+#endif
+}
+
+void TFTDisplayControl::setBacklightBrightnessPercent(uint8_t percent) {
+    if (percent > 100) {
+        percent = 100;
+    }
+    backlightBrightnessPercent = percent;
+#ifdef TFT_BLK
+    applyBacklight();
+#endif
+}
+
+void TFTDisplayControl::applyBacklight() {
+#ifdef TFT_BLK
+    static constexpr uint8_t kPwmChannel = 0;
+    const uint8_t duty = backlightOn ? static_cast<uint8_t>(map(backlightBrightnessPercent, 0, 100, 0, 255)) : 0;
+    ledcWrite(kPwmChannel, duty);
 #endif
 }
 

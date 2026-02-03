@@ -20,6 +20,9 @@ public:
     // Ambient patterns
     void setAmbientAllLights(uint8_t brightnessPercentage);
     void startAmbientRandom(uint8_t maxBrightnessPercentage, uint8_t density);
+    void setAmbientRandomSpeed(uint16_t frameMs, uint8_t step);
+    uint16_t getAmbientRandomFrameMs() const { return ambientFrameMs; }
+    uint8_t getAmbientRandomStep() const { return ambientStep; }
     void stopAmbient();
     bool isAmbientActive() const;
 
@@ -50,6 +53,8 @@ private:
     unsigned long lastAmbientUpdateMs = 0;
     uint8_t ambientMaxBrightness = 60;
     uint8_t ambientDensity = 6;
+    uint16_t ambientFrameMs = 40;
+    uint8_t ambientStep = 6;
     uint8_t ambientLevels[NUM_LEDS] = {0};
     int8_t ambientDelta[NUM_LEDS] = {0};
 };
