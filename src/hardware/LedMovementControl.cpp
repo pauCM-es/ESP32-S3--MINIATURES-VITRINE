@@ -7,6 +7,9 @@ LedMovementControl::LedMovementControl(LedControl& ledControl) : ledControl(ledC
 // Set all LEDs to standby mode (50% brightness)
 void LedMovementControl::setStandbyMode(int brightness) {
     pattern = Pattern::Standby;
+    if (brightness < 0) brightness = 0;
+    if (brightness > 100) brightness = 100;
+    standbyBrightnessPercent = static_cast<uint8_t>(brightness);
     ledControl.setWhite(brightness);
 }
 
@@ -14,7 +17,7 @@ void LedMovementControl::setStandbyMode(int brightness) {
 void LedMovementControl::setFocusMode(int position, bool lightUpRest) {
     pattern = Pattern::Focus;
     if (lightUpRest) {
-        setStandbyMode(30);
+        setStandbyMode(standbyBrightnessPercent);
         isStandbyLight = true;
     } else {
         ledControl.clearAll();
@@ -138,4 +141,15 @@ void LedMovementControl::clearAll() {
     pattern = Pattern::Focus;
     isStandbyLight = false;
     ledControl.clearAll();
+}
+
+void LedMovementControl::setLedBrightnessPercent(uint8_t percent) {
+    if (percent > 100) percent = 100;
+    ledBrightnessPercent = percent;
+    ledControl.setBrightness(percent);
+}
+
+void LedMovementControl::setStandbyBrightnessPercent(uint8_t percent) {
+    if (percent > 100) percent = 100;
+    standbyBrightnessPercent = percent;
 }

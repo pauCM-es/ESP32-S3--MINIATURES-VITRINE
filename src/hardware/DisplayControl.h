@@ -55,7 +55,11 @@ public:
     // Show a centered title
     void showTitle(const char* title, uint16_t color = WHITE);
     void showSubTitle(const char* title, uint16_t color = WHITE);
-    void showOptions(const char* const options[], int numOptions, int focusIndex);
+    // Menu/options list rendering
+    // - focusIndex: item currently navigated by encoder
+    // - selectedIndex: optional marker for the current saved/configured value (-1 disables)
+    // - footerHint: optional hint displayed at the bottom (nullptr disables)
+    void showOptions(const char* const options[], int numOptions, int focusIndex, int selectedIndex = -1, const char* footerHint = nullptr);
     
     void getCenterXPosition(const char* text, int& centerXPosition);
     // Utility method to get display pointer for advanced operations

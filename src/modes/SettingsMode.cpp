@@ -34,7 +34,72 @@ void settings_backlightBrightness(ModeManager& manager) {
         snprintf(msg, sizeof(msg), "Backlight: %u%%", static_cast<unsigned>(values[idx]));
         manager.showStatus("Settings", msg);
         delay(600);
-    }, initial);
+         }, initial, initial);
+}
+
+void settings_ledBrightness(ModeManager& manager) {
+    static const char* const options[] = {
+        "10%",
+        "20%",
+        "40%",
+        "60%",
+        "80%",
+        "100%",
+    };
+    static const uint8_t values[] = {10, 20, 40, 60, 80, 100};
+    static const int numOptions = sizeof(values) / sizeof(values[0]);
+
+    int initial = 2;
+    const uint8_t current = manager.getLedBrightnessPercent();
+    for (int i = 0; i < numOptions; i++) {
+        if (values[i] == current) {
+            initial = i;
+            break;
+        }
+    }
+
+    manager.selectMode(options, numOptions, [&](int idx) {
+        if (idx < 0 || idx >= numOptions) {
+            return;
+        }
+        manager.setLedBrightnessPercent(values[idx]);
+        char msg[48];
+        snprintf(msg, sizeof(msg), "LED: %u%%", static_cast<unsigned>(values[idx]));
+        manager.showStatus("Settings", msg);
+        delay(600);
+    }, initial, initial);
+}
+
+void settings_standbyBrightness(ModeManager& manager) {
+    static const char* const options[] = {
+        "5%",
+        "10%",
+        "20%",
+        "30%",
+        "40%",
+    };
+    static const uint8_t values[] = {5, 10, 20, 30, 40};
+    static const int numOptions = sizeof(values) / sizeof(values[0]);
+
+    int initial = 3;
+    const uint8_t current = manager.getStandbyBrightnessPercent();
+    for (int i = 0; i < numOptions; i++) {
+        if (values[i] == current) {
+            initial = i;
+            break;
+        }
+    }
+
+    manager.selectMode(options, numOptions, [&](int idx) {
+        if (idx < 0 || idx >= numOptions) {
+            return;
+        }
+        manager.setStandbyBrightnessPercent(values[idx]);
+        char msg[48];
+        snprintf(msg, sizeof(msg), "Standby: %u%%", static_cast<unsigned>(values[idx]));
+        manager.showStatus("Settings", msg);
+        delay(600);
+    }, initial, initial);
 }
 
 void settings_ambientSpeed(ModeManager& manager) {
@@ -72,7 +137,7 @@ void settings_ambientSpeed(ModeManager& manager) {
                 snprintf(msg, sizeof(msg), "Random: %s", speedOptions[sIdx]);
                 manager.showStatus("Settings", msg);
                 delay(600);
-            }, initial);
+            }, initial, initial);
             return;
         }
 
@@ -96,7 +161,7 @@ void settings_ambientSpeed(ModeManager& manager) {
                 snprintf(msg, sizeof(msg), "Random max: %u%%", static_cast<unsigned>(values[bIdx]));
                 manager.showStatus("Settings", msg);
                 delay(600);
-            }, initial);
+            }, initial, initial);
             return;
         }
 
@@ -120,7 +185,7 @@ void settings_ambientSpeed(ModeManager& manager) {
                 snprintf(msg, sizeof(msg), "Random density: %u", static_cast<unsigned>(values[dIdx]));
                 manager.showStatus("Settings", msg);
                 delay(600);
-            }, initial);
+            }, initial, initial);
             return;
         }
 
@@ -144,7 +209,7 @@ void settings_ambientSpeed(ModeManager& manager) {
                 snprintf(msg, sizeof(msg), "All lights: %u%%", static_cast<unsigned>(values[aIdx]));
                 manager.showStatus("Settings", msg);
                 delay(600);
-            }, initial);
+            }, initial, initial);
             return;
         }
 
@@ -188,7 +253,7 @@ void settings_sleepTimeout(ModeManager& manager) {
         }
         manager.showStatus("Settings", msg);
         delay(600);
-    }, initial);
+    }, initial, initial);
 }
 
 void settings_reset(ModeManager& manager) {

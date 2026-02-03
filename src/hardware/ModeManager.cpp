@@ -3,6 +3,7 @@
 #include "NfcControl.h"
 #include "DisplayControl.h"
 #include "EncoderControl.h"
+#include "config.h"
 #include "modes/ModesRegistry.h"
 #include "util/SettingsStore.h"
 #include <cstring>
@@ -10,9 +11,46 @@
 ModeManager::ModeManager(LedMovementControl& ledMovementControl, NFCReaderControl& nfcReader, TFTDisplayControl& displayControl, EncoderControl& encoderControl)
     : ledMovementControl(ledMovementControl), nfcReader(nfcReader), displayControl(displayControl), encoderControl(encoderControl) {}
 
-void ModeManager::begin() {
-    SettingsStore::load(settings);
+void ModeManager::begin(const DeviceSettings* initialSettings) {
+    if (initialSettings) {
+        settings = *initialSettings;
+    } else {
+        SettingsStore::load(settings);
+    }
     applySettingsToHardware();
+}
+
+void ModeManager::tick() {
+    if (!pendingSave) {
+        return;
+    }
+
+    const unsigned long now = millis();
+    if (pendingSaveDueMs != 0 && now < pendingSaveDueMs) {
+        return;
+    }
+
+    persistSettings();
+    pendingSave = false;
+    pendingSaveDueMs = 0;
+}
+
+uint8_t ModeManager::getLastMiniatureIndex() const {
+    return settings.lastMiniatureIndex;
+}
+
+void ModeManager::setLastMiniatureIndex(uint8_t index) {
+    if (index >= MAX_MINIATURES) {
+        index = 0;
+    }
+    if (settings.lastMiniatureIndex == index) {
+        return;
+    }
+    settings.lastMiniatureIndex = index;
+
+    // Defer persistence to avoid flash wear while rotating encoder.
+    pendingSave = true;
+    pendingSaveDueMs = millis() + 1500;
 }
 
 void ModeManager::applySettingsToHardware() {
@@ -21,6 +59,10 @@ void ModeManager::applySettingsToHardware() {
     if (!sleeping) {
         displayControl.setBacklight(true);
     }
+
+    ledMovementControl.setLedBrightnessPercent(settings.ledBrightnessPercent);
+    ledMovementControl.setStandbyBrightnessPercent(settings.standbyBrightnessPercent);
+
     ledMovementControl.setAmbientRandomSpeed(settings.ambientRandomFrameMs, settings.ambientRandomStep);
 }
 
@@ -67,7 +109,7 @@ void ModeManager::addNewMiniature() {
 }
 
 void ModeManager::setStandbyBrightness(uint8_t brightness) {
-   displayControl.showMode("Settings", "Reading tag...");
+    setStandbyBrightnessPercent(brightness);
 }
 
 void ModeManager::showStatus(const char* title, const char* message) {
@@ -96,6 +138,32 @@ void ModeManager::setBacklightBrightnessPercent(uint8_t percent) {
 
 uint8_t ModeManager::getBacklightBrightnessPercent() const {
     return settings.backlightBrightnessPercent;
+}
+
+void ModeManager::setLedBrightnessPercent(uint8_t percent) {
+    if (percent > 100) {
+        percent = 100;
+    }
+    settings.ledBrightnessPercent = percent;
+    ledMovementControl.setLedBrightnessPercent(percent);
+    persistSettings();
+}
+
+uint8_t ModeManager::getLedBrightnessPercent() const {
+    return settings.ledBrightnessPercent;
+}
+
+void ModeManager::setStandbyBrightnessPercent(uint8_t percent) {
+    if (percent > 100) {
+        percent = 100;
+    }
+    settings.standbyBrightnessPercent = percent;
+    ledMovementControl.setStandbyBrightnessPercent(percent);
+    persistSettings();
+}
+
+uint8_t ModeManager::getStandbyBrightnessPercent() const {
+    return settings.standbyBrightnessPercent;
 }
 
 void ModeManager::setAmbientAllLightsBrightnessPercent(uint8_t percent) {
@@ -189,6 +257,11 @@ void ModeManager::selectMainMode(std::function<void(int)> callback) {
     }
     modeNames[numModes] = "Back";
 
+    int initialFocus = numModes;
+    if (settings.lastMainModeIndex >= 0 && settings.lastMainModeIndex < numModes) {
+        initialFocus = settings.lastMainModeIndex;
+    }
+
     selectMode(
         modeNames,
         numModes + 1,
@@ -197,13 +270,17 @@ void ModeManager::selectMainMode(std::function<void(int)> callback) {
                 callback(-1);
                 return;
             }
+
+            settings.lastMainModeIndex = static_cast<int8_t>(selectedIndex);
+            persistSettings();
+
             callback(selectedIndex);
         },
-        /*initialFocusIndex=*/numModes
+        /*initialFocusIndex=*/initialFocus
     );
 }
 
-void ModeManager::selectMode(const char* const options[], int numOptions, std::function<void(int)> callback, int initialFocusIndex) {
+void ModeManager::selectMode(const char* const options[], int numOptions, std::function<void(int)> callback, int initialFocusIndex, int selectedIndex, const char* footerHint) {
     if (numOptions <= 0) {
         return;
     }
@@ -218,10 +295,23 @@ void ModeManager::selectMode(const char* const options[], int numOptions, std::f
     int lastRenderedFocusIndex = -1;
     bool optionSelected = false;
 
+    // Allow using BTN_MODE as a quick "Back" while in menus.
+    int lastModeBtnState = digitalRead(BTN_MODE);
+
     while (!optionSelected) {
         if (focusIndex != lastRenderedFocusIndex) {
-            displayControl.showOptions(options, numOptions, focusIndex);
+            displayControl.showOptions(options, numOptions, focusIndex, selectedIndex, footerHint);
             lastRenderedFocusIndex = focusIndex;
+        }
+
+        const int modeBtnState = digitalRead(BTN_MODE);
+        const bool modeBtnPressedEdge = (modeBtnState != lastModeBtnState) && (modeBtnState == LOW);
+        lastModeBtnState = modeBtnState;
+        if (!optionSelected && modeBtnPressedEdge) {
+            encoderControl.setCurrentIndex(savedMiniatureIndex);
+            callback(-1);
+            optionSelected = true;
+            break;
         }
 
         if (encoderControl.checkMovementWithWrap(numOptions)) {
@@ -262,6 +352,11 @@ void ModeManager::handleModeOptions(int modeIndex) {
     }
     optionsWithBack[mode.numOptions] = "Back";
 
+    const char* footerHint = nullptr;
+    if (mode.name && (strcmp(mode.name, "Settings") == 0)) {
+        footerHint = "Rotate: move  Press: select  MODE: back";
+    }
+
     selectMode(
         optionsWithBack,
         mode.numOptions + 1,
@@ -273,7 +368,9 @@ void ModeManager::handleModeOptions(int modeIndex) {
                 mode.actions[optionIndex](*this);
             }
         },
-        /*initialFocusIndex=*/mode.numOptions
+        /*initialFocusIndex=*/mode.numOptions,
+        /*selectedIndex=*/-1,
+        footerHint
     );
 }
 

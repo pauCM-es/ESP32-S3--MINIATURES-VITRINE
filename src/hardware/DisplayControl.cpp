@@ -26,6 +26,9 @@ bool TFTDisplayControl::begin() {
     
     // Initialize the display with specific width and height for the 1.9" ST7789
     display->init(TFT_WIDTH, TFT_HEIGHT);
+
+    // Ensure colors are not inverted (some panels can power up inverted)
+    display->invertDisplay(false);
     
     // Set rotation (0-3) - may need to be adjusted based on your specific display orientation
     display->setRotation(3);
@@ -135,7 +138,7 @@ void TFTDisplayControl::showMiniatureInfo(int index) {
     // Position indicator (encoder-driven state)
     char pos[32];
     snprintf(pos, sizeof(pos), "Pos %d/%d", index + 1, MAX_MINIATURES);
-    showMessage(pos, 10, 5, 2, WHITE);
+    showMessage(pos, 10, 215, 2, WHITE);
 
     // Fallback to "empty" if the demo entry is not initialized
     const char* name = DEMO_MINIATURES[index].name ? DEMO_MINIATURES[index].name : "empty";
@@ -251,17 +254,64 @@ uint16_t TFTDisplayControl::color565(uint8_t r, uint8_t g, uint8_t b) {
     return display->color565(r, g, b);
 }
 
-void TFTDisplayControl::showOptions(const char* const options[], int numOptions, int focusIndex) {
+void TFTDisplayControl::showOptions(const char* const options[], int numOptions, int focusIndex, int selectedIndex, const char* footerHint) {
     clear();
 
+    const int w = display->width();
+    const int yStart = 30;
+    const int lineH = 20;
+    const int xText = 18;
+    const int xTri = 6;
+    const int xMarker = w - 10;
+
+    // Dark blue highlight background for focused line
+    const uint16_t DARK_BLUE = color565(0, 0, 80);
+
     for (int i = 0; i < numOptions; i++) {
-        int yPosition = 30 + i * 20; // Adjust spacing between options
-        if (i == focusIndex) {
-            // Highlight the focused option
-            showMessage(options[i], 10, yPosition, 2, YELLOW);
-        } else {
-            // Regular option
-            showMessage(options[i], 10, yPosition, 2, WHITE);
+        const int y = yStart + i * lineH;
+        const bool isFocused = (i == focusIndex);
+        const bool isSelected = (selectedIndex >= 0 && i == selectedIndex);
+
+        if (isFocused) {
+            display->fillRect(0, y - 2, w, lineH, DARK_BLUE);
+            // Triangle marker (focus)
+            display->fillTriangle(
+                xTri, y + 6,
+                xTri, y + 14,
+                xTri + 6, y + 10,
+                YELLOW
+            );
         }
+
+        if (isSelected) {
+            // Check marker (current value)
+            const int x = xMarker - 6;
+            const int yMid = y + 10;
+            // Two-pass lines to make it slightly thicker
+            display->drawLine(x, yMid, x + 3, yMid + 3, GREEN);
+            display->drawLine(x + 3, yMid + 3, x + 10, yMid - 4, GREEN);
+            display->drawLine(x, yMid + 1, x + 3, yMid + 4, GREEN);
+            display->drawLine(x + 3, yMid + 4, x + 10, yMid - 3, GREEN);
+        }
+
+        uint16_t color = WHITE;
+        if (isFocused) {
+            color = YELLOW;
+        } else if (isSelected) {
+            color = GREEN;
+        }
+
+        display->setTextSize(2);
+        display->setTextColor(color);
+        display->setCursor(xText, y);
+        display->print(options[i]);
+    }
+
+    if (footerHint && footerHint[0] != '\0') {
+        const uint16_t GRAY = color565(170, 170, 170);
+        display->setTextSize(1);
+        display->setTextColor(GRAY);
+        display->setCursor(6, display->height() - 14);
+        display->print(footerHint);
     }
 }

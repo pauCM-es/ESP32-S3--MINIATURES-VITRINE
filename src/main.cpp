@@ -11,6 +11,8 @@
 #include "hardware/LedMovementControl.h"
 #include "hardware/ModeManager.h"
 #include "net/WsEventHandlers.h"
+#include "util/DeviceSettings.h"
+#include "util/SettingsStore.h"
 
 // Network managers
 WifiManager wifiManager;
@@ -47,10 +49,14 @@ void setup() {
     MaintenanceMode::getInstance().enter();
   }
 
+  // Load persisted settings early (needed for WiFi init)
+  DeviceSettings bootSettings;
+  SettingsStore::load(bootSettings);
+
   // Initialize networking
-  wifiManager.begin();
+  wifiManager.begin(bootSettings);
   webServer.begin();
-  attachWsEventHandlers(*webServer.getWsServer(), ledControl, ledMovementControl);
+  attachWsEventHandlers(*webServer.getWsServer(), ledControl, ledMovementControl, &modeManager);
 
   // Initialize LED strip
   ledControl.begin();
@@ -77,11 +83,11 @@ void setup() {
   // Button Mode pin configuration
   pinMode(BTN_MODE, INPUT_PULLUP);
 
-  // Load persisted settings and apply them to hardware
-  modeManager.begin();
+  // Load persisted settings into the ModeManager and apply them to hardware
+  modeManager.begin(&bootSettings);
   
   // Set initial position
-  currentIndex = 0;
+  currentIndex = modeManager.getLastMiniatureIndex();
   encoderControl.setCurrentIndex(currentIndex);
   displayControl.showMiniatureInfo(currentIndex);
   ledMovementControl.setFocusMode(currentIndex);
@@ -93,6 +99,9 @@ void setup() {
 }
 
 void loop() {
+  // Flush deferred persistence (e.g., lastMiniatureIndex)
+  modeManager.tick();
+
   // Network is handled asynchronously by ESPAsyncWebServer
 
   // Advance ambient animations (non-blocking)
@@ -202,6 +211,7 @@ void loop() {
     } else {
       // Update current index from encoder
       currentIndex = encoderControl.getCurrentIndex();
+      modeManager.setLastMiniatureIndex(static_cast<uint8_t>(currentIndex));
 
       // Update display with new miniature info
       displayControl.showMiniatureInfo(currentIndex);

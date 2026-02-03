@@ -4,13 +4,15 @@
 
 #include "net/MaintenanceMode.h"
 #include "util/Log.h"
+#include "hardware/ModeManager.h"
 
 struct WsLedContext {
     LedControl* ledControl;
     LedMovementControl* ledMovementControl;
+    ModeManager* modeManager;
 };
 
-static WsLedContext g_ctx = {nullptr, nullptr};
+static WsLedContext g_ctx = {nullptr, nullptr, nullptr};
 
 static void handleWsTextMessage(void* ctx, AsyncWebSocketClient* client, const char* message, size_t len) {
     (void)len;
@@ -62,7 +64,11 @@ static void handleWsTextMessage(void* ctx, AsyncWebSocketClient* client, const c
         int value = doc["value"] | -1;
         if (value < 0) value = 0;
         if (value > 100) value = 100;
-        c->ledControl->setBrightness(static_cast<uint8_t>(value));
+        if (c->modeManager) {
+            c->modeManager->setLedBrightnessPercent(static_cast<uint8_t>(value));
+        } else {
+            c->ledControl->setBrightness(static_cast<uint8_t>(value));
+        }
     } else if (strcmp(cmd, "clear") == 0) {
         c->ledControl->clearAll();
     } else if (strcmp(cmd, "pixel") == 0) {
@@ -82,6 +88,9 @@ static void handleWsTextMessage(void* ctx, AsyncWebSocketClient* client, const c
                 int brightness = doc["brightness"] | (doc["value"] | 50);
                 if (brightness < 0) brightness = 0;
                 if (brightness > 100) brightness = 100;
+                if (c->modeManager) {
+                    c->modeManager->setStandbyBrightnessPercent(static_cast<uint8_t>(brightness));
+                }
                 c->ledMovementControl->setStandbyMode(brightness);
             } else if (strcmp(name, "focus") == 0) {
                 c->ledMovementControl->setFocusMode(static_cast<uint8_t>(index));
@@ -102,9 +111,10 @@ static void handleWsTextMessage(void* ctx, AsyncWebSocketClient* client, const c
     client->text(out);
 }
 
-void attachWsEventHandlers(WsServer& wsServer, LedControl& ledControl, LedMovementControl& ledMovementControl) {
+void attachWsEventHandlers(WsServer& wsServer, LedControl& ledControl, LedMovementControl& ledMovementControl, ModeManager* modeManager) {
     g_ctx.ledControl = &ledControl;
     g_ctx.ledMovementControl = &ledMovementControl;
+    g_ctx.modeManager = modeManager;
 
     wsServer.setTextMessageHandler(&g_ctx, handleWsTextMessage);
 }

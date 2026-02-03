@@ -4,10 +4,13 @@
 #include "version.h"
 #include <ArduinoJson.h>
 #include <WiFi.h>
+#include "hardware/ModeManager.h"
 
-WebServer::WebServer() : server(80), fsMounted(false) {}
+WebServer::WebServer() : server(80), fsMounted(false), modeManager(nullptr) {}
 
-void WebServer::begin() {
+void WebServer::begin(ModeManager* modeManagerIn) {
+    modeManager = modeManagerIn;
+
     // Mount LittleFS
     fsMounted = LittleFS.begin(true);
     if (!fsMounted) {
@@ -35,6 +38,23 @@ void WebServer::setupRoutes() {
         handleApiFs(request);
     });
 
+    server.on("/api/settings", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        handleApiSettingsGet(request);
+    });
+
+    // JSON body POST
+    server.on(
+        "/api/settings",
+        HTTP_POST,
+        [](AsyncWebServerRequest* request) {
+            (void)request;
+        },
+        nullptr,
+        [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+            handleApiSettingsPost(request, data, len, index, total);
+        }
+    );
+
     // Step 8: OTA firmware update
     otaFirmware.attach(server, wsServer);
 
@@ -56,6 +76,100 @@ void WebServer::setupRoutes() {
     server.onNotFound([this](AsyncWebServerRequest *request) {
         handleNotFound(request);
     });
+}
+
+void WebServer::handleApiSettingsGet(AsyncWebServerRequest* request) {
+    if (!modeManager) {
+        request->send(503, "application/json", "{\"error\":\"no_mode_manager\"}");
+        return;
+    }
+
+    JsonDocument doc;
+
+    doc["sleepTimeoutMinutes"] = modeManager->getSleepTimeoutMinutes();
+    doc["backlightBrightnessPercent"] = modeManager->getBacklightBrightnessPercent();
+    doc["ledBrightnessPercent"] = modeManager->getLedBrightnessPercent();
+    doc["standbyBrightnessPercent"] = modeManager->getStandbyBrightnessPercent();
+
+    doc["ambientAllLightsBrightnessPercent"] = modeManager->getAmbientAllLightsBrightnessPercent();
+    doc["ambientRandomMaxBrightnessPercent"] = modeManager->getAmbientRandomMaxBrightnessPercent();
+    doc["ambientRandomDensity"] = modeManager->getAmbientRandomDensity();
+    doc["ambientRandomFrameMs"] = modeManager->getAmbientRandomFrameMs();
+    doc["ambientRandomStep"] = modeManager->getAmbientRandomStep();
+
+    // WiFi (do not return passwords)
+    // NOTE: WiFi changes require reboot to take effect currently.
+    doc["wifiStaEnabled"] = true; // default unless overridden by POST; kept for API symmetry
+    doc["wifiStaSsid"] = "";
+    doc["wifiStaPass"] = "";
+
+    String out;
+    serializeJson(doc, out);
+    request->send(200, "application/json", out);
+}
+
+void WebServer::handleApiSettingsPost(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+    (void)total;
+    if (!modeManager) {
+        request->send(503, "application/json", "{\"error\":\"no_mode_manager\"}");
+        return;
+    }
+
+    // Collect body in one go (simple; requests are expected to be small)
+    static String body;
+    if (index == 0) {
+        body = "";
+        body.reserve(total);
+    }
+    for (size_t i = 0; i < len; i++) {
+        body += static_cast<char>(data[i]);
+    }
+    if ((index + len) < total) {
+        return;
+    }
+
+    JsonDocument doc;
+    DeserializationError err = deserializeJson(doc, body);
+    if (err) {
+        request->send(400, "application/json", "{\"error\":\"bad_json\"}");
+        return;
+    }
+
+    // Generic numeric settings (optional)
+    if (doc.containsKey("sleepTimeoutMinutes")) {
+        modeManager->setSleepTimeoutMinutes(doc["sleepTimeoutMinutes"].as<uint16_t>());
+    }
+    if (doc.containsKey("backlightBrightnessPercent")) {
+        modeManager->setBacklightBrightnessPercent(doc["backlightBrightnessPercent"].as<uint8_t>());
+    }
+    if (doc.containsKey("ledBrightnessPercent")) {
+        modeManager->setLedBrightnessPercent(doc["ledBrightnessPercent"].as<uint8_t>());
+    }
+    if (doc.containsKey("standbyBrightnessPercent")) {
+        modeManager->setStandbyBrightnessPercent(doc["standbyBrightnessPercent"].as<uint8_t>());
+    }
+
+    // Ambient
+    if (doc.containsKey("ambientAllLightsBrightnessPercent")) {
+        modeManager->setAmbientAllLightsBrightnessPercent(doc["ambientAllLightsBrightnessPercent"].as<uint8_t>());
+    }
+    if (doc.containsKey("ambientRandomMaxBrightnessPercent")) {
+        modeManager->setAmbientRandomMaxBrightnessPercent(doc["ambientRandomMaxBrightnessPercent"].as<uint8_t>());
+    }
+    if (doc.containsKey("ambientRandomDensity")) {
+        modeManager->setAmbientRandomDensity(doc["ambientRandomDensity"].as<uint8_t>());
+    }
+    if (doc.containsKey("ambientRandomFrameMs") || doc.containsKey("ambientRandomStep")) {
+        const uint16_t frameMs = doc["ambientRandomFrameMs"] | modeManager->getAmbientRandomFrameMs();
+        const uint8_t step = doc["ambientRandomStep"] | modeManager->getAmbientRandomStep();
+        modeManager->setAmbientRandomSpeed(frameMs, step);
+    }
+
+    // WiFi credentials/mode persistence is handled by SettingsStore/DeviceSettings.
+    // For now this endpoint focuses on already-exposed numeric settings.
+    // (We can add explicit WiFi setters once you confirm desired UX and security.)
+
+    request->send(200, "application/json", "{\"ok\":true}");
 }
 
 void WebServer::handleApiInfo(AsyncWebServerRequest *request) {

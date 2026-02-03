@@ -14,8 +14,14 @@ class ModeManager {
 public:
     ModeManager(LedMovementControl& ledMovementControl, NFCReaderControl& nfcReader, TFTDisplayControl& displayControl, EncoderControl& encoderControl);
 
-    // Load persisted settings and apply them to hardware
-    void begin();
+    // Load persisted settings (or use provided settings) and apply them to hardware
+    void begin(const DeviceSettings* initialSettings = nullptr);
+
+    // Call frequently from loop() to flush deferred persistence
+    void tick();
+
+    uint8_t getLastMiniatureIndex() const;
+    void setLastMiniatureIndex(uint8_t index);
 
     void addNewMiniature();
     void setStandbyBrightness(uint8_t brightness);
@@ -30,6 +36,12 @@ public:
     // Persisted settings (used by Settings mode)
     void setBacklightBrightnessPercent(uint8_t percent);
     uint8_t getBacklightBrightnessPercent() const;
+
+    void setLedBrightnessPercent(uint8_t percent);
+    uint8_t getLedBrightnessPercent() const;
+
+    void setStandbyBrightnessPercent(uint8_t percent);
+    uint8_t getStandbyBrightnessPercent() const;
 
     void setAmbientAllLightsBrightnessPercent(uint8_t percent);
     uint8_t getAmbientAllLightsBrightnessPercent() const;
@@ -58,7 +70,7 @@ public:
     // Show the top-level list of modes (via ModesRegistry) and return the selected mode index
     void selectMainMode(std::function<void(int)> callback);
 
-    void selectMode(const char* const options[], int numOptions, std::function<void(int)> callback, int initialFocusIndex = 0);
+    void selectMode(const char* const options[], int numOptions, std::function<void(int)> callback, int initialFocusIndex = 0, int selectedIndex = -1, const char* footerHint = nullptr);
     void handleModeOptions(int modeIndex);
 
     // Introspection helpers for callers (e.g., logging)
@@ -77,6 +89,10 @@ private:
 
     void applySettingsToHardware();
     bool persistSettings();
+
+    // Deferred persistence for frequently updated values
+    bool pendingSave = false;
+    unsigned long pendingSaveDueMs = 0;
 };
 
 #endif

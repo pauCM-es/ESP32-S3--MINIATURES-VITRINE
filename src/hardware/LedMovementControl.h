@@ -32,6 +32,13 @@ public:
     // Turn off all LEDs immediately
     void clearAll();
 
+    // Persisted brightness knobs
+    void setLedBrightnessPercent(uint8_t percent);
+    uint8_t getLedBrightnessPercent() const { return ledBrightnessPercent; }
+
+    void setStandbyBrightnessPercent(uint8_t percent);
+    uint8_t getStandbyBrightnessPercent() const { return standbyBrightnessPercent; }
+
     boolean getIsStandbyLight() {
         return isStandbyLight;
     }
@@ -39,6 +46,9 @@ public:
 private:
     LedControl& ledControl;
     boolean isStandbyLight = false;
+
+    uint8_t ledBrightnessPercent = 40;
+    uint8_t standbyBrightnessPercent = 30;
 
     enum class Pattern {
         Focus,

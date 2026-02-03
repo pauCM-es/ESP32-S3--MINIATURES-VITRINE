@@ -17,9 +17,9 @@ static const ModeDef MODE_DEFS[] = {
     },
     {
         "Settings",
-        {"Backlight Brightness", "Speed ambient lights", "Sleep timeout", "Reset"},
-        4,
-        {settings_backlightBrightness, settings_ambientSpeed, settings_sleepTimeout, settings_reset}
+        {"Backlight Brightness", "LED Brightness", "Standby Brightness", "Speed ambient lights", "Sleep timeout", "Reset"},
+        6,
+        {settings_backlightBrightness, settings_ledBrightness, settings_standbyBrightness, settings_ambientSpeed, settings_sleepTimeout, settings_reset}
     },
     {
         "Sleep",

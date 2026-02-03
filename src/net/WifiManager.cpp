@@ -17,19 +17,48 @@
 #endif
 
 void WifiManager::begin() {
-    WiFi.mode(WIFI_MODE_APSTA);
-    
-    if (HAS_WIFI_SECRETS) {
-        connectStation();
-    }
-    
-    startAccessPoint();
+    DeviceSettings defaults;
+    begin(defaults);
 }
 
-bool WifiManager::connectStation() {
+void WifiManager::begin(const DeviceSettings& settings) {
+    const bool staEnabled = settings.wifiStaEnabled;
+    WiFi.mode(staEnabled ? WIFI_MODE_APSTA : WIFI_MODE_AP);
+
+    if (staEnabled) {
+        connectStation(&settings);
+    }
+
+    startAccessPoint(&settings);
+}
+
+static bool hasNonEmpty(const char* s) {
+    return s && s[0] != '\0';
+}
+
+bool WifiManager::connectStation(const DeviceSettings* settings) {
+    const char* ssid = nullptr;
+    const char* pass = nullptr;
+
+    if (settings && hasNonEmpty(settings->wifiStaSsid)) {
+        ssid = settings->wifiStaSsid;
+        pass = settings->wifiStaPass;
+    }
+
 #if HAS_WIFI_SECRETS
-    LOGI("wifi", "Connecting to SSID: %s", WIFI_SSID);
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    if (!ssid || ssid[0] == '\0') {
+        ssid = WIFI_SSID;
+        pass = WIFI_PASS;
+    }
+#endif
+
+    if (!ssid || ssid[0] == '\0') {
+        LOGW("wifi", "STA disabled/no credentials; AP only");
+        return false;
+    }
+
+    LOGI("wifi", "Connecting to SSID: %s", ssid);
+    WiFi.begin(ssid, pass ? pass : "");
     
     const uint32_t startMs = millis();
     while (WiFi.status() != WL_CONNECTED && (millis() - startMs) < 15000) {
@@ -43,14 +72,16 @@ bool WifiManager::connectStation() {
         LOGW("wifi", "STA connect timeout; falling back to AP only");
         return false;
     }
-#else
-    return false;
-#endif
 }
 
-void WifiManager::startAccessPoint() {
-    const char *apSsid = AP_SSID;
-    const char *apPass = AP_PASS;
+void WifiManager::startAccessPoint(const DeviceSettings* settings) {
+    const char* apSsid = AP_SSID;
+    const char* apPass = AP_PASS;
+
+    if (settings && hasNonEmpty(settings->wifiApSsid)) {
+        apSsid = settings->wifiApSsid;
+        apPass = settings->wifiApPass;
+    }
     
     if (WiFi.softAP(apSsid, apPass)) {
         LOGI("wifi", "AP started: %s", apSsid);
