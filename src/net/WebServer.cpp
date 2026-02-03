@@ -99,9 +99,12 @@ void WebServer::handleApiSettingsGet(AsyncWebServerRequest* request) {
 
     // WiFi (do not return passwords)
     // NOTE: WiFi changes require reboot to take effect currently.
-    doc["wifiStaEnabled"] = true; // default unless overridden by POST; kept for API symmetry
-    doc["wifiStaSsid"] = "";
-    doc["wifiStaPass"] = "";
+    doc["wifiStaEnabled"] = modeManager->getWifiStaEnabled();
+    doc["wifiStaSsid"] = modeManager->getWifiStaSsid();
+    doc["wifiStaPassSet"] = modeManager->hasWifiStaPass();
+    doc["wifiApSsid"] = modeManager->getWifiApSsid();
+    doc["wifiApPassSet"] = modeManager->hasWifiApPass();
+    doc["wifiRebootRequired"] = true;
 
     String out;
     serializeJson(doc, out);
@@ -109,27 +112,40 @@ void WebServer::handleApiSettingsGet(AsyncWebServerRequest* request) {
 }
 
 void WebServer::handleApiSettingsPost(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-    (void)total;
     if (!modeManager) {
         request->send(503, "application/json", "{\"error\":\"no_mode_manager\"}");
         return;
     }
 
-    // Collect body in one go (simple; requests are expected to be small)
-    static String body;
+    // Collect body per-request (ESPAsyncWebServer pattern)
     if (index == 0) {
-        body = "";
-        body.reserve(total);
+        if (request->_tempObject) {
+            delete static_cast<String*>(request->_tempObject);
+            request->_tempObject = nullptr;
+        }
+        String* body = new String();
+        body->reserve(total);
+        request->_tempObject = body;
     }
+
+    String* body = static_cast<String*>(request->_tempObject);
+    if (!body) {
+        request->send(500, "application/json", "{\"error\":\"no_body_buffer\"}");
+        return;
+    }
+
     for (size_t i = 0; i < len; i++) {
-        body += static_cast<char>(data[i]);
+        *body += static_cast<char>(data[i]);
     }
+
     if ((index + len) < total) {
         return;
     }
 
     JsonDocument doc;
-    DeserializationError err = deserializeJson(doc, body);
+    DeserializationError err = deserializeJson(doc, *body);
+    delete body;
+    request->_tempObject = nullptr;
     if (err) {
         request->send(400, "application/json", "{\"error\":\"bad_json\"}");
         return;
@@ -160,16 +176,43 @@ void WebServer::handleApiSettingsPost(AsyncWebServerRequest* request, uint8_t* d
         modeManager->setAmbientRandomDensity(doc["ambientRandomDensity"].as<uint8_t>());
     }
     if (doc.containsKey("ambientRandomFrameMs") || doc.containsKey("ambientRandomStep")) {
-        const uint16_t frameMs = doc["ambientRandomFrameMs"] | modeManager->getAmbientRandomFrameMs();
-        const uint8_t step = doc["ambientRandomStep"] | modeManager->getAmbientRandomStep();
+        const uint16_t frameMs = doc.containsKey("ambientRandomFrameMs")
+            ? doc["ambientRandomFrameMs"].as<uint16_t>()
+            : modeManager->getAmbientRandomFrameMs();
+        const uint8_t step = doc.containsKey("ambientRandomStep")
+            ? doc["ambientRandomStep"].as<uint8_t>()
+            : modeManager->getAmbientRandomStep();
         modeManager->setAmbientRandomSpeed(frameMs, step);
     }
 
-    // WiFi credentials/mode persistence is handled by SettingsStore/DeviceSettings.
-    // For now this endpoint focuses on already-exposed numeric settings.
-    // (We can add explicit WiFi setters once you confirm desired UX and security.)
+    bool wifiChanged = false;
 
-    request->send(200, "application/json", "{\"ok\":true}");
+    // WiFi STA
+    const bool hasStaEnabled = doc.containsKey("wifiStaEnabled");
+    const bool hasStaSsid = doc.containsKey("wifiStaSsid");
+    const bool hasStaPass = doc.containsKey("wifiStaPass");
+    if (hasStaEnabled || hasStaSsid || hasStaPass) {
+        const bool enabled = hasStaEnabled ? doc["wifiStaEnabled"].as<bool>() : modeManager->getWifiStaEnabled();
+        const char* ssid = hasStaSsid ? doc["wifiStaSsid"].as<const char*>() : modeManager->getWifiStaSsid();
+        const char* pass = hasStaPass ? doc["wifiStaPass"].as<const char*>() : nullptr;
+        wifiChanged |= modeManager->setWifiStaConfig(enabled, ssid, pass, hasStaPass);
+    }
+
+    // WiFi AP
+    const bool hasApSsid = doc.containsKey("wifiApSsid");
+    const bool hasApPass = doc.containsKey("wifiApPass");
+    if (hasApSsid || hasApPass) {
+        const char* ssid = hasApSsid ? doc["wifiApSsid"].as<const char*>() : modeManager->getWifiApSsid();
+        const char* pass = hasApPass ? doc["wifiApPass"].as<const char*>() : nullptr;
+        wifiChanged |= modeManager->setWifiApConfig(ssid, pass, hasApPass);
+    }
+
+    JsonDocument resp;
+    resp["ok"] = true;
+    resp["rebootRequired"] = wifiChanged;
+    String out;
+    serializeJson(resp, out);
+    request->send(200, "application/json", out);
 }
 
 void WebServer::handleApiInfo(AsyncWebServerRequest *request) {

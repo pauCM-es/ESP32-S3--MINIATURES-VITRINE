@@ -230,6 +230,86 @@ bool ModeManager::resetPersistedSettings() {
     return ok;
 }
 
+bool ModeManager::getWifiStaEnabled() const {
+    return settings.wifiStaEnabled;
+}
+
+const char* ModeManager::getWifiStaSsid() const {
+    return settings.wifiStaSsid;
+}
+
+bool ModeManager::hasWifiStaPass() const {
+    return settings.wifiStaPass[0] != '\0';
+}
+
+const char* ModeManager::getWifiApSsid() const {
+    return settings.wifiApSsid;
+}
+
+bool ModeManager::hasWifiApPass() const {
+    return settings.wifiApPass[0] != '\0';
+}
+
+namespace {
+bool copyCStrIfChanged(char* dst, size_t dstSize, const char* src) {
+    if (!dst || dstSize == 0) {
+        return false;
+    }
+    if (!src) {
+        src = "";
+    }
+
+    // Fast path: unchanged
+    if (strncmp(dst, src, dstSize) == 0) {
+        // Note: strncmp() stops at '\0'; safe for comparing to src.
+        return false;
+    }
+
+    strncpy(dst, src, dstSize - 1);
+    dst[dstSize - 1] = '\0';
+    return true;
+}
+}
+
+bool ModeManager::setWifiStaConfig(bool enabled, const char* ssid, const char* pass, bool passProvided) {
+    bool changed = false;
+
+    if (settings.wifiStaEnabled != enabled) {
+        settings.wifiStaEnabled = enabled;
+        changed = true;
+    }
+
+    if (ssid != nullptr) {
+        changed |= copyCStrIfChanged(settings.wifiStaSsid, sizeof(settings.wifiStaSsid), ssid);
+    }
+
+    if (passProvided) {
+        changed |= copyCStrIfChanged(settings.wifiStaPass, sizeof(settings.wifiStaPass), pass);
+    }
+
+    if (changed) {
+        persistSettings();
+    }
+    return changed;
+}
+
+bool ModeManager::setWifiApConfig(const char* ssid, const char* pass, bool passProvided) {
+    bool changed = false;
+
+    if (ssid != nullptr) {
+        changed |= copyCStrIfChanged(settings.wifiApSsid, sizeof(settings.wifiApSsid), ssid);
+    }
+
+    if (passProvided) {
+        changed |= copyCStrIfChanged(settings.wifiApPass, sizeof(settings.wifiApPass), pass);
+    }
+
+    if (changed) {
+        persistSettings();
+    }
+    return changed;
+}
+
 int ModeManager::getNumModes() const {
     return Modes::getNumModes();
 }

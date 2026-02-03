@@ -55,7 +55,7 @@ void setup() {
 
   // Initialize networking
   wifiManager.begin(bootSettings);
-  webServer.begin();
+  webServer.begin(&modeManager);
   attachWsEventHandlers(*webServer.getWsServer(), ledControl, ledMovementControl, &modeManager);
 
   // Initialize LED strip

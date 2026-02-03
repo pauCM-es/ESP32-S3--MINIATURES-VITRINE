@@ -58,6 +58,17 @@ public:
 
     bool resetPersistedSettings();
 
+    // WiFi persisted settings (applied on boot by WifiManager)
+    bool getWifiStaEnabled() const;
+    const char* getWifiStaSsid() const;
+    bool hasWifiStaPass() const;
+    const char* getWifiApSsid() const;
+    bool hasWifiApPass() const;
+    // Returns true if anything changed (and was persisted)
+    bool setWifiStaConfig(bool enabled, const char* ssid, const char* pass, bool passProvided);
+    // Returns true if anything changed (and was persisted)
+    bool setWifiApConfig(const char* ssid, const char* pass, bool passProvided);
+
     // Sleep helpers
     void enterSleep();
     void wakeFromSleep(int currentIndex);
