@@ -27,6 +27,7 @@ constexpr const char* kKeyAmbientRndMaxPct = "ambRMax";
 constexpr const char* kKeyAmbientRndDensity = "ambRDen";
 constexpr const char* kKeyAmbientRndFrameMs = "ambRFms";
 constexpr const char* kKeyAmbientRndStep = "ambRStep";
+constexpr const char* kKeySegmentLeds = "segLeds";
 
 uint8_t clampPercent(int value) {
     if (value < 0) return 0;
@@ -74,6 +75,17 @@ bool SettingsStore::load(DeviceSettings& out) {
     const uint8_t step = prefs.getUChar(kKeyAmbientRndStep, out.ambientRandomStep);
     out.ambientRandomStep = step == 0 ? out.ambientRandomStep : step;
 
+    {
+        uint8_t tmpSeg[MAX_MINIATURES];
+        for (int i = 0; i < MAX_MINIATURES; i++) tmpSeg[i] = LEDS_PER_SEGMENT;
+        const size_t readLen = prefs.getBytes(kKeySegmentLeds, tmpSeg, MAX_MINIATURES);
+        if (readLen == MAX_MINIATURES) {
+            for (int i = 0; i < MAX_MINIATURES; i++) {
+                out.miniatureSegmentLeds[i] = (tmpSeg[i] > 0) ? tmpSeg[i] : LEDS_PER_SEGMENT;
+            }
+        }
+    }
+
     out.wifiStaEnabled = prefs.getUChar(kKeyWifiStaEnabled, out.wifiStaEnabled ? 1 : 0) != 0;
     loadString(prefs, kKeyWifiStaSsid, out.wifiStaSsid, sizeof(out.wifiStaSsid), out.wifiStaSsid);
     loadString(prefs, kKeyWifiStaPass, out.wifiStaPass, sizeof(out.wifiStaPass), out.wifiStaPass);
@@ -105,6 +117,7 @@ bool SettingsStore::save(const DeviceSettings& settings) {
     prefs.putUChar(kKeyAmbientRndDensity, settings.ambientRandomDensity);
     prefs.putUShort(kKeyAmbientRndFrameMs, settings.ambientRandomFrameMs);
     prefs.putUChar(kKeyAmbientRndStep, settings.ambientRandomStep);
+    prefs.putBytes(kKeySegmentLeds, settings.miniatureSegmentLeds, MAX_MINIATURES);
 
     prefs.putUChar(kKeyWifiStaEnabled, settings.wifiStaEnabled ? 1 : 0);
     prefs.putString(kKeyWifiStaSsid, settings.wifiStaSsid);

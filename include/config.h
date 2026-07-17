@@ -5,7 +5,11 @@
 // NeoPixel LED strip - Using GPIO48 (compatible with LED output)
 #define LED_PIN 5
 #define LED_INTERNAL_PIN 48
-#define NUM_LEDS 26
+// WS2812B strip density: 160 LEDs per meter
+#define LEDS_PER_METER 160
+#define NUM_LEDS 160
+// Default number of LEDs per miniature segment (NUM_LEDS / MAX_MINIATURES = 5)
+#define LEDS_PER_SEGMENT 5
 
 // // OLED Display (I2C)
 // #define OLED_SDA 8

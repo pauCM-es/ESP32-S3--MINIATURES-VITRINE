@@ -2,6 +2,7 @@
 #define DEVICE_SETTINGS_H
 
 #include <Arduino.h>
+#include "config.h"
 
 // Conservative sizes (ESP32 WiFi): SSID <= 32, WPA2 pass <= 63
 static constexpr size_t WIFI_SSID_MAX_LEN = 32;
@@ -42,6 +43,17 @@ struct DeviceSettings {
 
     char wifiApSsid[WIFI_SSID_MAX_LEN + 1] = "Vitrine-ESP32S3";
     char wifiApPass[WIFI_PASS_MAX_LEN + 1] = "vitrine1234";
+
+    // Per-miniature LED segment sizes.
+    // miniatureSegmentLeds[i] == number of LEDs that belong to position i.
+    // Defaults to LEDS_PER_SEGMENT (from config.h) for every position.
+    uint8_t miniatureSegmentLeds[MAX_MINIATURES];
+
+    DeviceSettings() {
+        for (int i = 0; i < MAX_MINIATURES; i++) {
+            miniatureSegmentLeds[i] = LEDS_PER_SEGMENT;
+        }
+    }
 };
 
 #endif

@@ -2,6 +2,7 @@
 
 #include <ArduinoJson.h>
 
+#include "config.h"
 #include "net/MaintenanceMode.h"
 #include "util/Log.h"
 #include "hardware/ModeManager.h"
@@ -59,6 +60,8 @@ static void handleWsTextMessage(void* ctx, AsyncWebSocketClient* client, const c
     // {"type":"led","cmd":"clear"}
     // {"type":"led","cmd":"pixel","index":0..N,"r":0..255,"g":0..255,"b":0..255}
     // {"type":"led","cmd":"mode","name":"standby"|"focus"|"selected","index":0..N}
+    // {"type":"led","cmd":"segment","index":0..MAX_MINIATURES-1,"leds":1..NUM_LEDS}
+    // {"type":"led","cmd":"segmentInfo"}  → responds with array of all segment sizes
 
     if (strcmp(cmd, "brightness") == 0) {
         int value = doc["value"] | -1;
@@ -98,6 +101,31 @@ static void handleWsTextMessage(void* ctx, AsyncWebSocketClient* client, const c
                 c->ledMovementControl->setSelectedMode(static_cast<uint8_t>(index));
             }
         }
+    } else if (strcmp(cmd, "segment") == 0) {
+        // Set LED count for a specific miniature position and persist.
+        // {"type":"led","cmd":"segment","index":N,"leds":M}
+        int index = doc["index"] | -1;
+        int leds  = doc["leds"]  |  0;
+        if (index >= 0 && leds > 0 && c->modeManager) {
+            c->modeManager->setMiniatureSegmentLeds(index, static_cast<uint8_t>(leds));
+        }
+    } else if (strcmp(cmd, "segmentInfo") == 0) {
+        // Query all segment sizes.
+        // Response: {"type":"ok","cmd":"segmentInfo","segments":[5,5,...]}
+        JsonDocument response;
+        response["type"] = "ok";
+        response["cmd"]  = "segmentInfo";
+        JsonArray arr = response["segments"].to<JsonArray>();
+        for (int i = 0; i < MAX_MINIATURES; i++) {
+            uint8_t sz = c->modeManager
+                ? c->modeManager->getMiniatureSegmentLeds(i)
+                : LEDS_PER_SEGMENT;
+            arr.add(sz);
+        }
+        String out;
+        serializeJson(response, out);
+        client->text(out);
+        return;
     } else {
         LOGW("ws", "Unknown led cmd: %s", cmd);
     }

@@ -1,8 +1,13 @@
 #include "LedMovementControl.h"
 #include "LedControl.h"
+#include "config.h"
 
 // Constructor
-LedMovementControl::LedMovementControl(LedControl& ledControl) : ledControl(ledControl) {}
+LedMovementControl::LedMovementControl(LedControl& ledControl) : ledControl(ledControl) {
+    for (int i = 0; i < MAX_MINIATURES; i++) {
+        segmentLeds[i] = LEDS_PER_SEGMENT;
+    }
+}
 
 // Set all LEDs to standby mode (50% brightness)
 void LedMovementControl::setStandbyMode(int brightness) {
@@ -23,23 +28,41 @@ void LedMovementControl::setFocusMode(int position, bool lightUpRest) {
         ledControl.clearAll();
         isStandbyLight = false;
     }
-    
-    ledControl.lightPosition(position, ledControl.getWhite(100)); // 100% brightness
+
+    // Light the entire segment for this position at full brightness.
+    const int start = getSegmentStart(position);
+    const int size  = getSegmentSize(position);
+    for (int i = 0; i < size; i++) {
+        const int idx = start + i;
+        if (idx < NUM_LEDS) {
+            ledControl.setPixel(idx, ledControl.getWhite(100));
+        }
+    }
+    ledControl.show();
 }
 
 // Set a specific miniature to selected mode (green color)
 void LedMovementControl::setSelectedMode(int position) {
-    ledControl.lightPosition(position, ledControl.getGreen());
-    delay(500); 
-    ledControl.lightPosition(position, ledControl.getRed());
-    delay(500); 
-    ledControl.lightPosition(position, ledControl.getBlue());
-    delay(500); 
-    ledControl.lightPosition(position, ledControl.getYellow());
-    delay(500);
-    ledControl.lightPosition(position, ledControl.getWhiteRGB());
-    delay(500);
-    ledControl.lightPosition(position, ledControl.getWhite(100));
+    const int start = getSegmentStart(position);
+    const int size  = getSegmentSize(position);
+
+    // Helper lambda: paint the whole segment with one color and show.
+    auto lightSegment = [&](uint32_t color) {
+        for (int i = 0; i < size; i++) {
+            const int idx = start + i;
+            if (idx < NUM_LEDS) {
+                ledControl.setPixel(idx, color);
+            }
+        }
+        ledControl.show();
+    };
+
+    lightSegment(ledControl.getGreen());   delay(500);
+    lightSegment(ledControl.getRed());     delay(500);
+    lightSegment(ledControl.getBlue());    delay(500);
+    lightSegment(ledControl.getYellow());  delay(500);
+    lightSegment(ledControl.getWhiteRGB()); delay(500);
+    lightSegment(ledControl.getWhite(100));
 }
 
 void LedMovementControl::setAmbientAllLights(uint8_t brightnessPercentage) {
@@ -141,6 +164,33 @@ void LedMovementControl::clearAll() {
     pattern = Pattern::Focus;
     isStandbyLight = false;
     ledControl.clearAll();
+}
+
+// --- Segment helpers ---
+
+int LedMovementControl::getSegmentStart(int position) const {
+    int start = 0;
+    for (int i = 0; i < position && i < MAX_MINIATURES; i++) {
+        start += segmentLeds[i];
+    }
+    return start;
+}
+
+int LedMovementControl::getSegmentSize(int position) const {
+    if (position < 0 || position >= MAX_MINIATURES) return LEDS_PER_SEGMENT;
+    return segmentLeds[position];
+}
+
+void LedMovementControl::setSegmentSize(int position, uint8_t numLeds) {
+    if (position < 0 || position >= MAX_MINIATURES) return;
+    if (numLeds == 0) numLeds = 1;
+    segmentLeds[position] = numLeds;
+}
+
+void LedMovementControl::loadSegmentSizes(const uint8_t* sizes, int count) {
+    for (int i = 0; i < count && i < MAX_MINIATURES; i++) {
+        segmentLeds[i] = (sizes[i] > 0) ? sizes[i] : LEDS_PER_SEGMENT;
+    }
 }
 
 void LedMovementControl::setLedBrightnessPercent(uint8_t percent) {

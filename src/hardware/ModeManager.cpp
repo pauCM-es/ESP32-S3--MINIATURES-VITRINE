@@ -65,6 +65,7 @@ void ModeManager::applySettingsToHardware() {
 
     ledMovementControl.setLedBrightnessPercent(settings.ledBrightnessPercent);
     ledMovementControl.setStandbyBrightnessPercent(settings.standbyBrightnessPercent);
+    ledMovementControl.loadSegmentSizes(settings.miniatureSegmentLeds, MAX_MINIATURES);
 
     ledMovementControl.setAmbientRandomSpeed(settings.ambientRandomFrameMs, settings.ambientRandomStep);
 }
@@ -536,4 +537,17 @@ bool ModeManager::isSleepMode(int modeIndex) const {
     while (true) {
         delay(1000);
     }
+}
+
+void ModeManager::setMiniatureSegmentLeds(int position, uint8_t numLeds) {
+    if (position < 0 || position >= MAX_MINIATURES) return;
+    if (numLeds == 0) numLeds = 1;
+    settings.miniatureSegmentLeds[position] = numLeds;
+    ledMovementControl.setSegmentSize(position, numLeds);
+    persistSettings();
+}
+
+uint8_t ModeManager::getMiniatureSegmentLeds(int position) const {
+    if (position < 0 || position >= MAX_MINIATURES) return LEDS_PER_SEGMENT;
+    return settings.miniatureSegmentLeds[position];
 }

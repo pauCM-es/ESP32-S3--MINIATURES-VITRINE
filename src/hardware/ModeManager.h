@@ -58,6 +58,10 @@ public:
 
     bool resetPersistedSettings();
 
+    // Per-miniature LED segment size (number of LEDs for position i).
+    void setMiniatureSegmentLeds(int position, uint8_t numLeds);
+    uint8_t getMiniatureSegmentLeds(int position) const;
+
     // WiFi persisted settings (applied on boot by WifiManager)
     bool getWifiStaEnabled() const;
     const char* getWifiStaSsid() const;

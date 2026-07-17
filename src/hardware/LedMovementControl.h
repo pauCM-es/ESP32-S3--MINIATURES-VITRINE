@@ -32,6 +32,19 @@ public:
     // Turn off all LEDs immediately
     void clearAll();
 
+    // --- Segment management ---
+    // Returns the first LED index of the given miniature position.
+    int getSegmentStart(int position) const;
+
+    // Returns the number of LEDs in the segment for the given position.
+    int getSegmentSize(int position) const;
+
+    // Override the segment size for a single position (1..NUM_LEDS).
+    void setSegmentSize(int position, uint8_t numLeds);
+
+    // Bulk-load segment sizes from a DeviceSettings array (called on begin/settings apply).
+    void loadSegmentSizes(const uint8_t* sizes, int count);
+
     // Persisted brightness knobs
     void setLedBrightnessPercent(uint8_t percent);
     uint8_t getLedBrightnessPercent() const { return ledBrightnessPercent; }
@@ -49,6 +62,9 @@ private:
 
     uint8_t ledBrightnessPercent = 40;
     uint8_t standbyBrightnessPercent = 30;
+
+    // Per-miniature segment sizes (number of LEDs per position).
+    uint8_t segmentLeds[MAX_MINIATURES];
 
     enum class Pattern {
         Focus,

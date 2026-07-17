@@ -1,17 +1,24 @@
 #include "LedControl.h"
 #include "ColorUtils.h" // Include the new color_utils header
 
+namespace {
+uint8_t addSaturating(uint8_t base, uint8_t extra) {
+    uint16_t sum = static_cast<uint16_t>(base) + static_cast<uint16_t>(extra);
+    return (sum > 255U) ? 255U : static_cast<uint8_t>(sum);
+}
+}
+
 // Constructor
 LedControl::LedControl() {
-    // RGBW strips are commonly SK6812 with GRBW byte order
-    strip = new Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRBW + NEO_KHZ800);
+    // WS2812B is RGB with GRB byte order.
+    strip = new Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 }
 
 // Initialize LED strip
 void LedControl::begin() {
     strip->begin();
     strip->clear();
-    strip->setBrightness(125); // Default to 12/255 brightness (about 5%)
+    strip->setBrightness(12); // ~5% default brightness to limit inrush/current.
     strip->show();
 }
 
@@ -48,7 +55,13 @@ void LedControl::setPixelRGBW(int position, uint8_t r, uint8_t g, uint8_t b, uin
     if (position < 0 || position >= NUM_LEDS) {
         return;
     }
-    strip->setPixelColor(position, r, g, b, w);
+    // WS2812B has no dedicated white channel; mix white into RGB.
+    strip->setPixelColor(
+        position,
+        addSaturating(r, w),
+        addSaturating(g, w),
+        addSaturating(b, w)
+    );
 }
 
 void LedControl::setPixelWhite(int position, uint8_t w) {
@@ -74,19 +87,23 @@ void LedControl::clearAll() {
 
 void LedControl::setWhite(uint8_t brightnessPercentage) {
     uint8_t brightness = map(brightnessPercentage, 0, 100, 0, 255);
-    strip->fill(strip->Color(0, 0, 0, brightness));
+    strip->fill(strip->Color(brightness, brightness, brightness));
     strip->show();
 }
 
 
 // Color helper methods
 uint32_t LedControl::getColor(uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
-    return strip->Color(r, g, b, w);
+    return strip->Color(
+        addSaturating(r, w),
+        addSaturating(g, w),
+        addSaturating(b, w)
+    );
 }
 
 uint32_t LedControl::getWhite(uint8_t brightnessPercentage) {
     uint8_t brightness = map(brightnessPercentage, 0, 100, 0, 255);
-    return strip->Color(0, 0, 0, brightness);
+    return strip->Color(brightness, brightness, brightness);
 }
 
 uint32_t LedControl::getRed() {
